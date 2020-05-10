@@ -1,0 +1,4 @@
+.vscode
+out
+typings/deno.d.ts
+.DS_Store
