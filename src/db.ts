@@ -1,0 +1,255 @@
+import * as sqlite from "https://deno.land/x/sqlite/mod.ts"
+import { Stream, Hub, Segment, Resolve } from "./common/interfaces.ts"
+import { v4 } from "https://deno.land/std/uuid/mod.ts"
+
+type CreateStreamFn = () => Promise<Stream>
+
+interface GetSegmentsFnArgs {
+    streamId: string
+    segmentId?: string
+}
+type GetSegmentsFn = (args: GetSegmentsFnArgs) => Promise<Segment[]>
+
+interface AddSegmentFnArgs {
+    streamId: string
+    url: string
+}
+type AddSegmentFn = (args: AddSegmentFnArgs) => Promise<Segment>
+
+interface GetHubsFnArgs {
+    streamId: string
+}
+type GetHubsFn = (args: GetHubsFnArgs) => Promise<Hub[]>
+
+interface AddHubFnArgs {
+    streamId: string
+    url: string
+}
+type AddHubFn = (args: AddHubFnArgs) => Promise<Hub>
+
+interface RemoveHubFnArgs {
+    url: string
+    streamId: string
+}
+type RemoveHubFn = (args: RemoveHubFnArgs) => Promise<void>
+
+// TODO: add doc
+export interface DBActions {
+    createStream: CreateStreamFn
+    getSegments: GetSegmentsFn
+    addSegment: AddSegmentFn
+    getHubs: GetHubsFn
+    addHub: AddHubFn
+    removeHub: RemoveHubFn
+}
+
+// TODO: add doc
+function createStream(db: sqlite.DB): CreateStreamFn {
+    return (): Promise<Stream> => {
+        return new Promise((resolve: Resolve<Stream>): void => {
+            const stream: Stream = {
+                id: v4.generate(),
+                alias: v4.generate(),
+                created: Date.now()
+            }
+
+            db.query("INSERT INTO streams VALUES ($id, $alias, $created);", {
+                $id: stream.id,
+                $alias: stream.alias,
+                $created: stream.created
+            })
+
+            resolve(stream)
+        })
+    }
+}
+
+// TODO: add doc
+function addHub(db: sqlite.DB): AddHubFn {
+    return ({ url, streamId }): Promise<Hub> => {
+        return new Promise((resolve: Resolve<Hub>): void => {
+            const hub: Hub = {
+                url,
+                streamId
+            }
+
+            db.query("INSERT INTO hubs VALUES ($url, $streamId);", {
+                $url: hub.url,
+                $streamId: hub.streamId
+            })
+
+            resolve(hub)
+        })
+    }
+}
+
+// TODO: add doc
+function removeHub(db: sqlite.DB): RemoveHubFn {
+    return ({ url, streamId }): Promise<void> => {
+        return new Promise((resolve: Resolve<void>): void => {
+            db.query(
+                "DELETE FROM hubs WHERE url = $url AND streamId = $streamId;",
+                {
+                    $url: url,
+                    $streamId: streamId
+                }
+            )
+
+            resolve()
+        })
+    }
+}
+
+// TODO: add doc
+function getHubs(db: sqlite.DB): GetHubsFn {
+    return ({ streamId }): Promise<Hub[]> => {
+        return new Promise((resolve: Resolve<Hub[]>): void => {
+            const hubs: Hub[] = []
+
+            const rows = db.query(
+                "SELECT url, streamId FROM hubs WHERE streamId = $streamId;",
+                { $streamId: streamId }
+            )
+
+            for (const row of rows) {
+                if (row) hubs.push({ url: row[0], streamId: row[1] })
+            }
+
+            resolve(hubs)
+        })
+    }
+}
+
+// TODO: add doc
+function addSegment(db: sqlite.DB): AddSegmentFn {
+    return ({ streamId, url }): Promise<Segment> => {
+        return new Promise((resolve: Resolve<Segment>): void => {
+            const id: string = v4.generate()
+            const segment: Segment = {
+                id,
+                streamId,
+                // base url should finish with /
+                url: new URL(`${streamId}/${id}`, url).toString()
+            }
+
+            db.query("INSERT INTO segments VALUES ($id, $streamId, $url);", {
+                $id: segment.id,
+                $streamId: segment.streamId,
+                $url: segment.url
+            })
+
+            resolve(segment)
+        })
+    }
+}
+
+// TODO: add doc
+function getSegments(db: sqlite.DB): GetSegmentsFn {
+    return ({ streamId, segmentId }): Promise<Segment[]> => {
+        return new Promise((resolve: Resolve<Segment[]>): void => {
+            // if segment id, return all after segment ID
+            const segments: Segment[] = []
+
+            if (segmentId) {
+                const rows = db.query(
+                    "SELECT id, streamId, url FROM segments WHERE streamId = $streamId AND rowid > (SELECT rowid FROM segments WHERE id = $segmentId) LIMIT 10;",
+                    {
+                        $segmentId: segmentId,
+                        $streamId: streamId
+                    }
+                )
+
+                for (const row of rows) {
+                    if (row) {
+                        const [id, streamId, url] = row
+                        segments.push({ id, streamId, url })
+                    }
+                }
+            } else {
+                // if none, get length
+                const count = db.query(
+                    "SELECT COUNT(*) FROM segments WHERE streamId = $streamId;",
+                    {
+                        $streamId: streamId
+                    }
+                )
+
+                if (!count) {
+                    resolve([])
+                    return
+                }
+
+                const value = count.next().value
+
+                const length = value ? value[0] : 0
+
+                if (!length) {
+                    resolve([])
+                    return
+                }
+
+                const rows = db.query(
+                    "SELECT id, streamId, url FROM segments WHERE streamId = $streamId LIMIT 10 OFFSET $offset;",
+                    {
+                        $segmentId: segmentId,
+                        $streamId: streamId,
+                        $offset:
+                            length > 10 ? ~~(Math.random() * (length - 9)) : 0
+                    }
+                )
+
+                for (const row of rows) {
+                    if (row) {
+                        const [id, streamId, url] = row
+                        segments.push({ id, streamId, url })
+                    }
+                }
+            }
+
+            resolve(segments)
+        })
+    }
+}
+
+// TODO: add doc
+export function initDb(db: sqlite.DB): sqlite.DB {
+    /**
+     * id -> public access id for playlist/audio files
+     * alias -> secret id for uploads/ streaming
+     * created -> datetime stream was generated
+     */
+    db.query(
+        "CREATE TABLE IF NOT EXISTS streams (id TEXT, alias TEXT, created INTEGER)",
+        []
+    )
+
+    /**
+     * url -> hub url for finding the stream
+     * streamId -> id of linked stream
+     */
+    db.query("CREATE TABLE IF NOT EXISTS hubs (url TEXT, streamId TEXT)", [])
+
+    /**
+     * id -> id for audio file segment retrieval
+     * streamId -> id of linked stream
+     * url -> public url for file request
+     */
+    db.query(
+        "CREATE TABLE IF NOT EXISTS segments (id TEXT, streamId TEXT, url TEXT)",
+        []
+    )
+
+    return db
+}
+
+// TODO: add doc
+export function getDBActions(db: sqlite.DB): DBActions {
+    return {
+        createStream: createStream(db),
+        getHubs: getHubs(db),
+        addHub: addHub(db),
+        removeHub: removeHub(db),
+        getSegments: getSegments(db),
+        addSegment: addSegment(db)
+    }
+}

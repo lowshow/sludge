@@ -12,3 +12,23 @@ export type ValueOf<T> = T[keyof T]
 
 // TODO: add doc
 export type StringObject = { [index: string]: string }
+
+// TODO: add doc
+export interface Stream {
+    id: string
+    alias: string
+    created: number
+}
+
+// TODO: add doc
+export interface Hub {
+    url: string
+    streamId: string
+}
+
+// TODO: add doc
+export interface Segment {
+    id: string
+    streamId: string
+    url: string
+}
