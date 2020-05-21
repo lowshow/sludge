@@ -23,7 +23,13 @@ import { parse, Args } from "https://deno.land/std/flags/mod.ts"
             await Deno.create(dbPath)
         }
         // get public url and port from args
-        main(flags.public, flags.port, rootDir, dbPath, flags.files)
+        main({
+            dbPath,
+            fileUrl: flags.files,
+            port: flags.port,
+            publicUrl: flags.public,
+            rootDir
+        })
     } catch (e) {
         console.error(e)
     }

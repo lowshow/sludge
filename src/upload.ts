@@ -9,14 +9,30 @@ import { Stream } from "./common/interfaces.ts"
 import { DBActions } from "./db.ts"
 import * as path from "https://deno.land/std/path/mod.ts"
 
-// TODO: add doc
-async function loadFile(
-    r: MultipartReader,
-    dbActions: DBActions,
-    rootDir: string,
-    fileUrl: string,
+interface HandleFormFnArgs {
+    req: ServerRequest
+    dbActions: DBActions
+    rootDir: string
+    fileUrl: string
+    alias: string
+}
+
+interface LoadFileFnArgs {
+    r: MultipartReader
+    dbActions: DBActions
+    rootDir: string
+    fileUrl: string
     streamId: string
-): Promise<void> {
+}
+
+// TODO: add doc
+async function loadFile({
+    dbActions,
+    fileUrl,
+    r,
+    rootDir,
+    streamId
+}: LoadFileFnArgs): Promise<void> {
     const data: MultipartFormData = await r.readForm()
     const formFile: FormFile | undefined = data.file("audio")
     // we have the file data, connection can close now
@@ -38,13 +54,13 @@ async function loadFile(
 }
 
 // TODO: add doc
-export async function handleForm(
-    req: ServerRequest,
-    dbActions: DBActions,
-    rootDir: string,
-    fileUrl: string,
-    alias: string
-): Promise<Response> {
+export async function handleForm({
+    alias,
+    dbActions,
+    fileUrl,
+    req,
+    rootDir
+}: HandleFormFnArgs): Promise<Response> {
     const type: string | null = req.headers.get("content-type")
     if (!type) {
         return {
@@ -61,7 +77,13 @@ export async function handleForm(
         // need to wait before response, otherwise connection will close
         // before we have all the data!
         const reader: MultipartReader = new MultipartReader(req.r, boundary)
-        await loadFile(reader, dbActions, rootDir, fileUrl, stream.id)
+        await loadFile({
+            dbActions,
+            fileUrl,
+            r: reader,
+            rootDir,
+            streamId: stream.id
+        })
         return { body: new TextEncoder().encode("Success\n"), status: 200 }
     } catch (e) {
         return {

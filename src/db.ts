@@ -1,23 +1,27 @@
 import * as sqlite from "https://deno.land/x/sqlite/mod.ts"
 import { Stream, Hub, Segment, Resolve } from "./common/interfaces.ts"
 
+// TODO: add doc
 interface CreateStreamFnArgs {
     id: string
     alias: string
 }
 type CreateStreamFn = (args: CreateStreamFnArgs) => Promise<Stream>
 
+// TODO: add doc
 interface GetStreamFnArgs {
     alias: string
 }
 type GetStreamFn = (args: GetStreamFnArgs) => Promise<Stream>
 
+// TODO: add doc
 interface GetSegmentsFnArgs {
     streamId: string
     segmentId?: string
 }
 type GetSegmentsFn = (args: GetSegmentsFnArgs) => Promise<Segment[]>
 
+// TODO: add doc
 interface AddSegmentFnArgs {
     streamId: string
     url: string
@@ -25,19 +29,23 @@ interface AddSegmentFnArgs {
 }
 type AddSegmentFn = (args: AddSegmentFnArgs) => Promise<Segment>
 
+// TODO: add doc
 interface GetHubsFnArgs {
     streamId: string
 }
 type GetHubsFn = (args: GetHubsFnArgs) => Promise<Hub[]>
 
+// TODO: add doc
 interface AddHubFnArgs {
+    id: string
     streamId: string
     url: string
 }
 type AddHubFn = (args: AddHubFnArgs) => Promise<Hub>
 
+// TODO: add doc
 interface RemoveHubFnArgs {
-    url: string
+    id: string
     streamId: string
 }
 type RemoveHubFn = (args: RemoveHubFnArgs) => Promise<void>
@@ -101,14 +109,16 @@ function getStream(db: sqlite.DB): GetStreamFn {
 
 // TODO: add doc
 function addHub(db: sqlite.DB): AddHubFn {
-    return ({ url, streamId }): Promise<Hub> => {
+    return ({ id, url, streamId }): Promise<Hub> => {
         return new Promise((resolve: Resolve<Hub>): void => {
             const hub: Hub = {
+                id,
                 url,
                 streamId
             }
 
-            db.query("INSERT INTO hubs VALUES ($url, $streamId);", {
+            db.query("INSERT INTO hubs VALUES ($id, $url, $streamId);", {
+                $id: hub.id,
                 $url: hub.url,
                 $streamId: hub.streamId
             })
@@ -120,12 +130,12 @@ function addHub(db: sqlite.DB): AddHubFn {
 
 // TODO: add doc
 function removeHub(db: sqlite.DB): RemoveHubFn {
-    return ({ url, streamId }): Promise<void> => {
+    return ({ id, streamId }): Promise<void> => {
         return new Promise((resolve: Resolve<void>): void => {
             db.query(
-                "DELETE FROM hubs WHERE url = $url AND streamId = $streamId;",
+                "DELETE FROM hubs WHERE id = $id AND streamId = $streamId;",
                 {
-                    $url: url,
+                    $id: id,
                     $streamId: streamId
                 }
             )
@@ -142,12 +152,13 @@ function getHubs(db: sqlite.DB): GetHubsFn {
             const hubs: Hub[] = []
 
             const rows = db.query(
-                "SELECT url, streamId FROM hubs WHERE streamId = $streamId;",
+                "SELECT id, url, streamId FROM hubs WHERE streamId = $streamId;",
                 { $streamId: streamId }
             )
 
             for (const row of rows) {
-                if (row) hubs.push({ url: row[0], streamId: row[1] })
+                if (row)
+                    hubs.push({ id: row[0], url: row[1], streamId: row[2] })
             }
 
             resolve(hubs)
@@ -258,10 +269,14 @@ export function initDb(db: sqlite.DB): sqlite.DB {
     )
 
     /**
+     * id -> id returned from hub for future delete req
      * url -> hub url for finding the stream
      * streamId -> id of linked stream
      */
-    db.query("CREATE TABLE IF NOT EXISTS hubs (url TEXT, streamId TEXT)", [])
+    db.query(
+        "CREATE TABLE IF NOT EXISTS hubs (id TEXT, url TEXT, streamId TEXT)",
+        []
+    )
 
     /**
      * id -> id for audio file segment retrieval

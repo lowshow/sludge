@@ -22,6 +22,7 @@ export interface Stream {
 
 // TODO: add doc
 export interface Hub {
+    id: string
     url: string
     streamId: string
 }

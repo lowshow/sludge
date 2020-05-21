@@ -3,12 +3,18 @@ import { DBActions } from "./db.ts"
 import { v4 } from "https://deno.land/std/uuid/mod.ts"
 import { Response } from "https://deno.land/std/http/server.ts"
 
-// TODO: add docs
-export async function createStream(
-    dbActions: DBActions,
-    rootDir: string,
+interface CreateStreamFnArgs {
+    dbActions: DBActions
+    rootDir: string
     publicUrl: string
-): Promise<Response> {
+}
+
+// TODO: add docs
+export async function createStream({
+    dbActions,
+    publicUrl,
+    rootDir
+}: CreateStreamFnArgs): Promise<Response> {
     const id: string = v4.generate()
     const alias: string = v4.generate()
     // create dir
