@@ -3,75 +3,12 @@ import {
     ServerRequest,
     Response
 } from "https://deno.land/std/http/server.ts"
-import {
-    MultipartReader,
-    MultipartFormData,
-    FormFile
-} from "https://deno.land/std/mime/multipart.ts"
 import { v4 } from "https://deno.land/std/uuid/mod.ts"
 import { Segment } from "./common/interfaces.ts"
-import * as path from "https://deno.land/std/path/mod.ts"
 import * as sqlite from "https://deno.land/x/sqlite/mod.ts"
 import { initDb, DBActions, getDBActions } from "./db.ts"
-
-// TODO: add doc
-async function loadFile(r: MultipartReader): Promise<void> {
-    const data: MultipartFormData = await r.readForm()
-    const formFile: FormFile | undefined = data.file("audio")
-    // we have the file data, connection can close now
-    if (!formFile || !formFile.content) return
-    const uuid = v4.generate()
-    const file = await Deno.open(`out/${uuid}.opus`, {
-        write: true,
-        create: true
-    })
-    await Deno.write(file.rid, formFile.content)
-    Deno.close(file.rid)
-    Promise.resolve()
-    const list = await Deno.open(`out/list`, {
-        write: true,
-        create: true,
-        append: true
-    })
-    await list.write(new TextEncoder().encode(`${uuid}\n`))
-    Deno.close(list.rid)
-}
-
-// TODO: add doc
-async function handleForm(req: ServerRequest): Promise<Response> {
-    const type: string | null = req.headers.get("content-type")
-    if (!type) {
-        return {
-            body: new TextEncoder().encode("Missing content type header\n"),
-            status: 400
-        }
-    }
-    // boundaries are used to communicate request data structure
-    // https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
-    const boundary: string = type.substr(type.indexOf("=") + 1)
-    // need to wait before response, otherwise connection will close
-    // before we have all the data!
-    const reader: MultipartReader = new MultipartReader(req.r, boundary)
-    await loadFile(reader)
-    return { body: new TextEncoder().encode("Success\n"), status: 200 }
-}
-
-async function createStream(
-    dbActions: DBActions,
-    rootDir: string
-): Promise<Response> {
-    const id: string = v4.generate()
-    const pass: string = v4.generate()
-    // create dir
-    const dirPath: string = path.join(rootDir, "data", id)
-    const dir = await Deno.mkdir(dirPath, { recursive: true })
-    // add pass/id to file/store
-
-    // return public path for upload/ UI/ public stream
-    return {
-        status: 200
-    }
-}
+import { handleForm } from "./upload.ts"
+import { createStream } from "./stream.ts"
 
 // TODO: add doc
 async function handleGet(
@@ -110,7 +47,9 @@ async function handleGet(
 async function handlePost(
     req: ServerRequest,
     dbActions: DBActions,
-    rootDir: string
+    rootDir: string,
+    publicUrl: string,
+    fileUrl: string
 ): Promise<Response> {
     const path: string[] = req.url.split("/")
     try {
@@ -120,13 +59,13 @@ async function handlePost(
 
         if (path[1] === "") {
             // create stream id
-            return await createStream(dbActions, rootDir)
+            return await createStream(dbActions, rootDir, publicUrl)
         }
 
         // if 1 is a uuid
         // post adds file
         // need to match uuid in KV
-        return await handleForm(req)
+        return await handleForm(req, dbActions, rootDir, fileUrl, path[1])
     } catch (e) {
         return {
             body: new TextEncoder().encode(e.message),
@@ -155,13 +94,15 @@ async function handlePost(
 async function handleReq(
     req: ServerRequest,
     dbActions: DBActions,
-    rootDir: string
+    rootDir: string,
+    publicUrl: string,
+    fileUrl: string
 ): Promise<Response> {
     switch (req.method) {
         case "GET":
             return await handleGet(req, dbActions)
         case "POST":
-            return await handlePost(req, dbActions, rootDir)
+            return await handlePost(req, dbActions, rootDir, publicUrl, fileUrl)
         case "OPTIONS":
             return { status: 200 }
         default:
@@ -173,6 +114,7 @@ async function handleReq(
 }
 
 // TODO: add doc
+// TODO: move to nginx?
 // required for streaming requests
 function setCORS(res: Response): Response {
     if (!res.headers) {
@@ -201,19 +143,19 @@ export async function main(
     port: string,
     rootDir: string,
     dbPath: string,
-    filesUrl: string
+    fileUrl: string
 ): Promise<void> {
-    // const { getState, stop } = fileState(publicUrl)
-
-    // save on end
     const db: sqlite.DB = await sqlite.open(dbPath)
     const dbActions: DBActions = getDBActions(initDb(db))
 
     for await (const req of serve(`0.0.0.0:${port}`)) {
-        req.respond(setCORS(await handleReq(req, dbActions, rootDir)))
+        req.respond(
+            setCORS(
+                await handleReq(req, dbActions, rootDir, publicUrl, fileUrl)
+            )
+        )
     }
 
-    // stop()
     await sqlite.save(db)
     db.close()
 }

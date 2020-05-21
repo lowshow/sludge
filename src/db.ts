@@ -1,8 +1,16 @@
 import * as sqlite from "https://deno.land/x/sqlite/mod.ts"
 import { Stream, Hub, Segment, Resolve } from "./common/interfaces.ts"
-import { v4 } from "https://deno.land/std/uuid/mod.ts"
 
-type CreateStreamFn = () => Promise<Stream>
+interface CreateStreamFnArgs {
+    id: string
+    alias: string
+}
+type CreateStreamFn = (args: CreateStreamFnArgs) => Promise<Stream>
+
+interface GetStreamFnArgs {
+    alias: string
+}
+type GetStreamFn = (args: GetStreamFnArgs) => Promise<Stream>
 
 interface GetSegmentsFnArgs {
     streamId: string
@@ -13,6 +21,7 @@ type GetSegmentsFn = (args: GetSegmentsFnArgs) => Promise<Segment[]>
 interface AddSegmentFnArgs {
     streamId: string
     url: string
+    id: string
 }
 type AddSegmentFn = (args: AddSegmentFnArgs) => Promise<Segment>
 
@@ -36,6 +45,7 @@ type RemoveHubFn = (args: RemoveHubFnArgs) => Promise<void>
 // TODO: add doc
 export interface DBActions {
     createStream: CreateStreamFn
+    getStream: GetStreamFn
     getSegments: GetSegmentsFn
     addSegment: AddSegmentFn
     getHubs: GetHubsFn
@@ -45,11 +55,11 @@ export interface DBActions {
 
 // TODO: add doc
 function createStream(db: sqlite.DB): CreateStreamFn {
-    return (): Promise<Stream> => {
+    return ({ alias, id }): Promise<Stream> => {
         return new Promise((resolve: Resolve<Stream>): void => {
             const stream: Stream = {
-                id: v4.generate(),
-                alias: v4.generate(),
+                id,
+                alias,
                 created: Date.now()
             }
 
@@ -60,6 +70,31 @@ function createStream(db: sqlite.DB): CreateStreamFn {
             })
 
             resolve(stream)
+        })
+    }
+}
+
+// TODO: add doc
+function getStream(db: sqlite.DB): GetStreamFn {
+    return ({ alias }): Promise<Stream> => {
+        return new Promise((resolve: Resolve<Stream>): void => {
+            const rows = db.query(
+                "SELECT id, alias, created FROM streams WHERE alias = $alias;",
+                { $alias: alias }
+            )
+
+            for (const row of rows) {
+                if (row) {
+                    resolve({
+                        id: row[0],
+                        alias: row[1],
+                        created: row[2]
+                    })
+                    return
+                }
+            }
+
+            throw Error(`Did not find stream with alias ${alias}`)
         })
     }
 }
@@ -122,14 +157,13 @@ function getHubs(db: sqlite.DB): GetHubsFn {
 
 // TODO: add doc
 function addSegment(db: sqlite.DB): AddSegmentFn {
-    return ({ streamId, url }): Promise<Segment> => {
+    return ({ streamId, url, id }): Promise<Segment> => {
         return new Promise((resolve: Resolve<Segment>): void => {
-            const id: string = v4.generate()
             const segment: Segment = {
                 id,
                 streamId,
                 // base url should finish with /
-                url: new URL(`${streamId}/${id}`, url).toString()
+                url
             }
 
             db.query("INSERT INTO segments VALUES ($id, $streamId, $url);", {
@@ -246,6 +280,7 @@ export function initDb(db: sqlite.DB): sqlite.DB {
 export function getDBActions(db: sqlite.DB): DBActions {
     return {
         createStream: createStream(db),
+        getStream: getStream(db),
         getHubs: getHubs(db),
         addHub: addHub(db),
         removeHub: removeHub(db),
