@@ -31,9 +31,11 @@ export async function createStream({
     return {
         body: new TextEncoder().encode(
             JSON.stringify({
-                ui: new URL(`stream/${alias}`, publicUrl).toString(),
-                upload: new URL(alias, publicUrl).toString(),
-                playlist: new URL(`${alias}`, publicUrl).toString()
+                streamUI: new URL(`stream/${alias}`, publicUrl).toString(),
+                stream: new URL(alias, publicUrl).toString(),
+                playlist: new URL(id, publicUrl).toString(),
+                hub: new URL(`${alias}/hubs`, publicUrl).toString(),
+                hubUI: new URL(`hubs/${alias}`, publicUrl).toString()
             })
         ),
         status: 200,

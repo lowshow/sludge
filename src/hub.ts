@@ -33,10 +33,18 @@ export async function addHub({
         throw Error(`Hub ${hubUrl} already used by stream.`)
     }
     // send ping to hub to add playlist URL
+    // TODO: handle if failed to add
     const id: string = await fetch(hubUrl, {
-        method: "POST",
-        body: publicUrl
+        headers: {
+            "Content-Type": "text/plain"
+        },
+        method: "PUT",
+        body: new URL(stream.id, publicUrl).toString()
     }).then((res: Response) => res.text())
+
+    if (!id) {
+        throw Error("Could not add hub.")
+    }
     // add hub to hub list
     return await dbActions.addHub({ id, streamId: stream.id, url: hubUrl })
 }
@@ -56,7 +64,14 @@ export async function removeHub({
         throw Error(`Hub ${id} does not exist.`)
     }
     // send ping to hub to rem playlist URL
-    await fetch(hub.url, { method: "DELETE", body: hub.id })
+    // TODO: handle if failed to remove
+    await fetch(hub.url, {
+        headers: {
+            "Content-Type": "text/plain"
+        },
+        method: "DELETE",
+        body: new TextEncoder().encode(hub.id)
+    })
     // rem hub from hub list
     await dbActions.removeHub({ id, streamId: stream.id })
 }

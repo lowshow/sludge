@@ -1,0 +1,38 @@
+# open to public url
+# need path to data dir
+# / -> sludge UI
+# /stream/<stream id> -> splutter UI
+# /audio/<stream id>/<segment id> -> data dir
+# /hubs/<stream alias> -> hubs UI
+# /<stream id/alias> -> app proxy
+
+server {
+    listen                                  {{port}};
+    server_name                             {{location}};
+    
+    gzip                                    on;
+    gzip_types                              text/plain application/xml;
+
+    location ~ "\/([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})" {
+        proxy_pass                          {{sludge_location}};
+        proxy_set_header Host               $host;
+        proxy_set_header X-Real-IP          $remote_addr;
+    }
+
+    location / {
+        alias                               {{project_path}}/public/sludge;
+    }
+
+    location /stream {
+        alias                               {{project_path}}/public/splutter;
+    }
+
+    location /hubs {
+        alias                               {{project_path}}/public/hubs;
+    }
+
+    location /audio {
+        root                                {{data_path}}/audio;
+        try_files                           $uri $uri/ index.html;
+    }
+}

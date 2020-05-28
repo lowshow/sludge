@@ -49,7 +49,7 @@ async function loadFile({
     await dbActions.addSegment({
         id,
         streamId,
-        url: new URL(`${streamId}/${id}`, fileUrl).toString()
+        url: new URL(`${streamId}/${id}.opus`, fileUrl).toString()
     })
 }
 

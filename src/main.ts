@@ -78,14 +78,18 @@ async function handleGet({
                 streamAlias: path[1]
             })
             return {
-                body: new TextEncoder().encode(JSON.stringify(hubs)),
+                body: new TextEncoder().encode(
+                    JSON.stringify(
+                        hubs.map((hub) => ({ id: hub.id, url: hub.url }))
+                    )
+                ),
                 status: 200,
                 headers
             }
         }
 
         // return playlist
-        // /<stream>/<segment>
+        // /<stream id>/<segment?>
         const idList: Segment[] = await dbActions.getSegments({
             streamId: path[1],
             segmentId: v4.validate(path[2]) ? path[2] : undefined
@@ -113,8 +117,9 @@ async function handlePost({
     rootDir
 }: HandlePostFnArgs): Promise<Response> {
     const path: string[] = req.url.split("/")
+
     try {
-        if (path[1] === "") {
+        if (path[1] === "stream" && !path[2]) {
             // create stream id
             return await createStream({ dbActions, rootDir, publicUrl })
         }
@@ -303,14 +308,17 @@ export async function main({
     const db: sqlite.DB = await sqlite.open(dbPath)
     const dbActions: DBActions = getDBActions(initDb(db))
 
-    for await (const req of serve(`0.0.0.0:${port}`)) {
+    const server = serve(`0.0.0.0:${port}`)
+
+    for await (const req of server) {
         req.respond(
             setCORS(
                 await handleReq({ req, dbActions, rootDir, publicUrl, fileUrl })
             )
         )
+        sqlite.save(db)
     }
 
-    await sqlite.save(db)
     db.close()
+    server.close()
 }

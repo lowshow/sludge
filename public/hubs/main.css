@@ -1,0 +1,146 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-size: 16px;
+    color: white;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+.root .loader {
+    display: none;
+}
+.root .response {
+    display: none;
+}
+.root .error {
+    display: none;
+}
+
+.root.loading .loader {
+    display: block;
+}
+.root.complete .response {
+    display: block;
+}
+.root.error .error {
+    display: block;
+}
+
+.root {
+    min-height: 100%;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.rootInner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 320px;
+    padding: 10rem 1rem;
+    flex-direction: column;
+}
+
+.btn {
+    font-size: 1.2rem;
+    padding: 1rem;
+    border-radius: 4px;
+    background: transparent;
+    color: white;
+    border: solid 2px white;
+    margin: 0;
+    cursor: pointer;
+    transition: background 500ms;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.btn:hover {
+    background: #222;
+}
+
+.loader {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+.loader div {
+    position: absolute;
+    border: 4px solid #fff;
+    opacity: 1;
+    border-radius: 50%;
+    animation: loader 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+.loader div:nth-child(2) {
+    animation-delay: -0.5s;
+}
+@keyframes loader {
+    0% {
+        top: 36px;
+        left: 36px;
+        width: 0;
+        height: 0;
+        opacity: 1;
+    }
+    100% {
+        top: 0px;
+        left: 0px;
+        width: 72px;
+        height: 72px;
+        opacity: 0;
+    }
+}
+
+.root.loading .addHub {
+    display: none;
+}
+
+.item__box {
+    border: 2px solid white;
+    width: 100%;
+}
+.item__check {
+    display: none;
+}
+.item__label {
+    padding: 1rem 0.7rem;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    position: relative;
+    transition: background 500ms;
+}
+.item__check:not(:checked) + .item__label:hover {
+    background: #222;
+}
+.item__check:checked + .item__label {
+    background: #273c3c;
+}
+
+.addHub {
+    width: 100%;
+    margin-bottom: 2rem;
+}
+
+.addHub input {
+    display: block;
+    padding: 0.8rem;
+    border-radius: 0.25rem;
+    width: 100%;
+    font-size: 1rem;
+    box-sizing: border-box;
+    background: transparent;
+    color: white;
+    border: 2px solid white;
+    transition: border-color 500ms;
+    margin-bottom: 0.5rem;
+}
+
+.addHub input:focus,
+.addHub input:hover {
+    border-color: #2cb;
+}

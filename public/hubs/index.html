@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>sludge &bull; modern web audio streams</title>
+        <link rel="stylesheet" href="main.css" />
+    </head>
+    <body>
+        <div id="root" class="root">
+            <div class="rootInner">
+                <noscript>
+                    Unfortunately, without JavaScript, you cannot use this app.
+                </noscript>
+                <div class="loader" id="loader">
+                    <div></div>
+                    <div></div>
+                </div>
+                <p class="error" id="error"></p>
+                <div class="addHub">
+                    <input
+                        type="url"
+                        id="hubUrlInput"
+                        placeholder="hub url e.g. http://hub.url/1234"
+                    />
+                    <button class="btn" id="hubUrlAddBtn">Add hub</button>
+                </div>
+                <div id="hubs" class="hubs"></div>
+            </div>
+        </div>
+        <script src="main.js"></script>
+    </body>
+</html>

@@ -61,6 +61,16 @@ export interface DBActions {
     removeHub: RemoveHubFn
 }
 
+enum DT {
+    str = "TEXT",
+    int = "INTEGER"
+}
+
+interface CreateTableQFnArgs {
+    table: string
+    values: [string, DT][]
+}
+
 // TODO: add doc
 function createStream(db: sqlite.DB): CreateStreamFn {
     return ({ alias, id }): Promise<Stream> => {
@@ -236,7 +246,6 @@ function getSegments(db: sqlite.DB): GetSegmentsFn {
                 const rows = db.query(
                     "SELECT id, streamId, url FROM segments WHERE streamId = $streamId LIMIT 10 OFFSET $offset;",
                     {
-                        $segmentId: segmentId,
                         $streamId: streamId,
                         $offset:
                             length > 10 ? ~~(Math.random() * (length - 9)) : 0
@@ -256,6 +265,14 @@ function getSegments(db: sqlite.DB): GetSegmentsFn {
     }
 }
 
+function createTableQ({ table, values }: CreateTableQFnArgs): string {
+    return [
+        `CREATE TABLE IF NOT EXISTS`,
+        table,
+        `(${values.map((v) => v.join(" ")).join(", ")})`
+    ].join(" ")
+}
+
 // TODO: add doc
 export function initDb(db: sqlite.DB): sqlite.DB {
     /**
@@ -264,7 +281,14 @@ export function initDb(db: sqlite.DB): sqlite.DB {
      * created -> datetime stream was generated
      */
     db.query(
-        "CREATE TABLE IF NOT EXISTS streams (id TEXT, alias TEXT, created INTEGER)",
+        createTableQ({
+            table: "streams",
+            values: [
+                ["id", DT.str],
+                ["alias", DT.str],
+                ["created", DT.int]
+            ]
+        }),
         []
     )
 
@@ -274,7 +298,14 @@ export function initDb(db: sqlite.DB): sqlite.DB {
      * streamId -> id of linked stream
      */
     db.query(
-        "CREATE TABLE IF NOT EXISTS hubs (id TEXT, url TEXT, streamId TEXT)",
+        createTableQ({
+            table: "hubs",
+            values: [
+                ["id", DT.str],
+                ["url", DT.str],
+                ["streamId", DT.str]
+            ]
+        }),
         []
     )
 
@@ -284,7 +315,14 @@ export function initDb(db: sqlite.DB): sqlite.DB {
      * url -> public url for file request
      */
     db.query(
-        "CREATE TABLE IF NOT EXISTS segments (id TEXT, streamId TEXT, url TEXT)",
+        createTableQ({
+            table: "segments",
+            values: [
+                ["id", DT.str],
+                ["streamId", DT.str],
+                ["url", DT.str]
+            ]
+        }),
         []
     )
 
