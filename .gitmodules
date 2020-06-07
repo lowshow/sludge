@@ -1,3 +1,0 @@
-[submodule "external/splutter"]
-	path = external/splutter
-	url = git@github.com:lowshow/splutter.git
