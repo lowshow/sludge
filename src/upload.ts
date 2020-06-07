@@ -2,7 +2,7 @@ import {
     MultipartReader,
     MultipartFormData,
     FormFile
-} from "https://deno.land/std/mime/multipart.ts"
+} from "https://deno.land/std@0.51.0/mime/multipart.ts"
 import { v4 } from "https://deno.land/std/uuid/mod.ts"
 import { ServerRequest, Response } from "https://deno.land/std/http/server.ts"
 import { Stream } from "./common/interfaces.ts"
