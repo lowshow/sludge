@@ -3,6 +3,7 @@ import { el, mnt, atr, lstn } from "./dom.js";
 import { initState, onDiff } from "./state.js";
 import { View, views, viewSel } from "./view.js";
 import { addBtn } from "./atoms.js";
+import { hubGen } from "./hub.js";
 export var Mode;
 (function (Mode) {
     Mode[Mode["dummy"] = 0] = "dummy";
@@ -64,9 +65,12 @@ export function main({ container }) {
         view: View.empty,
         addStream: "",
         createStream: false,
+        addHub: "",
+        rmHub: "",
         mode: Mode.dummy,
         streams: [],
-        hubs: {}
+        hubs: {},
+        viewStreamIndex: -1
     });
     const viewWrap = viewContainer();
     mnt(container)([
@@ -80,4 +84,5 @@ export function main({ container }) {
         container: viewWrap
     });
     streamGen({ state });
+    hubGen({ state });
 }

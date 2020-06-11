@@ -130,3 +130,13 @@ export function umnt(element: HTMLElement): void {
 export function emt(element: HTMLElement): void {
     element.innerHTML = ""
 }
+
+// TODO: add doc
+export function cls<T extends HTMLElement>(
+    element: T
+): (className: string) => T {
+    return (className: string): T => {
+        element.classList.toggle(className)
+        return element
+    }
+}

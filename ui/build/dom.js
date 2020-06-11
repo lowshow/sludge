@@ -80,3 +80,10 @@ export function umnt(element) {
 export function emt(element) {
     element.innerHTML = "";
 }
+// TODO: add doc
+export function cls(element) {
+    return (className) => {
+        element.classList.toggle(className);
+        return element;
+    };
+}

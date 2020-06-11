@@ -4,7 +4,7 @@ export function initState(state) {
     return {
         getState: () => state,
         updateState: (newState) => {
-            const oldState = Object.assign({}, state);
+            const oldState = JSON.parse(JSON.stringify(state));
             Object.assign(state, newState);
             subscribers.forEach((sub) => sub(oldState));
         },
@@ -21,7 +21,7 @@ export function onDiff({ current, previous, selector }) {
     return {
         do: (fn) => {
             const curr = selector(current);
-            if (selector(previous) !== curr)
+            if (JSON.stringify(selector(previous)) !== JSON.stringify(curr))
                 fn(curr);
         }
     };

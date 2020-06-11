@@ -1,4 +1,4 @@
-import { atr, el, lstn, mnt } from "./dom.js";
+import { atr, el, lstn, mnt, cls } from "./dom.js";
 import { btnClass, toast, row, col12 } from "./atoms.js";
 import { onDiff } from "./state.js";
 import { aStreamSel } from "./stream.js";
@@ -14,7 +14,7 @@ export function createViewGen({ state: { getState, updateState, subscribe } }) {
     });
     const input = atr(el("input")).map([
         ["type", "url"],
-        ["className", "white-text"]
+        ["className", "white-text validate"]
     ]);
     subscribe((oldState) => {
         onDiff({
@@ -25,12 +25,12 @@ export function createViewGen({ state: { getState, updateState, subscribe } }) {
             input.value = value;
         });
     });
-    const add = mnt(el("form"))([
+    const add = mnt(cls(el("form"))("form"))([
         input,
         atr(el("button")).map([
             ["type", "submit"],
             ["textContent", "Submit"],
-            ["className", btnClass("btn right")]
+            ["className", btnClass("btn")]
         ])
     ]);
     lstn(input)

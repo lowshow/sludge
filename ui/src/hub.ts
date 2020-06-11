@@ -1,128 +1,179 @@
-// function getEl(selector) {
-//     return document.querySelector(selector)
-// }
+import { SFn, State, Mode } from "./main.js"
+import { onDiff } from "./state.js"
+import { err } from "./errors.js"
+import { View } from "./view.js"
+import { dummyHubDataURL } from "./dummyData.js"
+import { Maybe } from "./interfaces.js"
+import { StreamData, vStreamsSel, selectedStream } from "./stream.js"
 
-// function el(tag) {
-//     return document.createElement(tag)
-// }
+export interface HubData {
+    id: string
+    url: string
+}
 
-// function click(el) {
-//     return (fn) => el.addEventListener("click", fn)
-// }
+export function vHubsSel(state: State): HubData[] {
+    return state.hubs[state.viewStreamIndex] || []
+}
 
-// const match = {
-//     id:
-//         "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
-//     url: "https?://(www.)?[-a-zA-Z0-9@:%._+~#=]{1,256}"
-// }
+export function hubsSel(state: State): { [index: number]: HubData[] } {
+    return state.hubs
+}
 
-// async function parseData(data) {
-//     return data.map((item) => {
-//         if (typeof item !== "object") {
-//             throw Error("Invalid data")
-//         }
+export function aHubSel(state: State): string {
+    return state.addHub
+}
 
-//         return Object.keys(match).reduce((prev, curr) => {
-//             if (curr in item && item[curr].match(match[curr]) !== null) {
-//                 prev[curr] = item[curr]
-//                 return prev
-//             }
-//             throw Error(`Data missing ${curr}`)
-//         }, {})
-//     })
-// }
+export function rmHubSel(state: State): string {
+    return state.rmHub
+}
 
-// const root = getEl("#root")
-// const hubs = getEl("#hubs")
-// const loader = getEl("#loader")
-// const error = getEl("#error")
-// const hubUrlAddBtn = getEl("#hubUrlAddBtn")
-// const hubUrlInput = getEl("#hubUrlInput")
+function parseData(data: Maybe<HubData[]>): HubData[] {
+    if (!Array.isArray(data)) {
+        throw Error("Invalid data")
+    }
 
-// // get alias from path
-// const streamAlias = window.location.pathname.split("/").filter((p) => !!p)[1]
+    try {
+        data.forEach((hub: HubData): void => {
+            new URL(hub.url).toString()
+            if (
+                hub.id.match(
+                    "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+                ) === null
+            ) {
+                throw Error()
+            }
+        })
+    } catch {
+        throw Error("Invalid data")
+    }
 
-// load()
+    return data
+}
 
-// function setLoading() {
-//     hubs.innerHTML = ""
-//     root.className = "root loading"
-// }
+function getHubs({ state }: { state: SFn; reload?: boolean }): void {
+    const { getState, updateState }: SFn = state
+    const s: State = getState()
+    const { mode }: State = s
 
-// function load() {
-//     setLoading()
-//     // request hub list
-//     fetch(`/${streamAlias}/hubs`)
-//         .then((data) => data.json())
-//         .then(parseData)
-//         .then((data) => {
-//             setValues(data)
-//             root.classList.remove("loading")
-//             root.classList.add("complete")
-//         })
-//         .catch((err) => {
-//             root.classList.remove("loading")
-//             root.classList.add("error")
-//             error.textContent = err.message
-//         })
-// }
+    const selected: StreamData = selectedStream(s)
+    const isLive: boolean = mode === Mode.live
+    const url: string = isLive ? selected.hub : dummyHubDataURL.next().value
 
-// // populate table with hub urls/ checkbox/ rm button
-// function setValues(data) {
-//     const selected = {}
+    fetch(url)
+        .then((data: Response): Promise<any> => data.json())
+        .then(parseData)
+        .then((data: HubData[]): void => {
+            const { viewStreamIndex, hubs }: State = getState()
 
-//     const delBtn = el("button")
-//     delBtn.className = "btn"
-//     delBtn.textContent = "Delete selected hubs"
-//     delBtn.addEventListener("click", async () => {
-//         setLoading()
-//         // snd command to remove
-//         const x = Object.entries(selected).reduce((p, [k, v]) => {
-//             if (v)
-//                 p.push(fetch(`/${streamAlias}`, { method: "DELETE", body: k }))
-//             return p
-//         }, [])
-//         await Promise.all(x)
-//         load()
-//     })
+            updateState({
+                hubs: {
+                    ...hubs,
+                    [viewStreamIndex]: data
+                }
+            })
+        })
+        .catch((error: Error): void => {
+            updateState({ view: View.list })
 
-//     hubs.appendChild(delBtn)
+            if (error.name === "TypeError") {
+                error.name = "NetworkError"
+            }
 
-//     data.forEach((item) => {
-//         selected[item.id] = false
-//         const box = el("div")
-//         box.classList.add("item__box")
-//         hubs.appendChild(box)
-//         const check = el("input")
-//         check.type = "checkbox"
-//         check.classList.add("item__check")
-//         check.id = item.id
-//         box.appendChild(check)
-//         check.addEventListener("change", () => {
-//             selected[item.id] = !selected[item.id]
-//         })
-//         const title = el("label")
-//         title.textContent = item.url
-//         title.classList.add("item__label")
-//         title.htmlFor = item.id
-//         box.appendChild(title)
-//     })
-// }
+            err({ error, debug: !isLive })
+        })
+}
 
-// // add new hubs via input and add button
-// hubUrlAddBtn.addEventListener("click", () => {
-//     const url = hubUrlInput.value
-//     setLoading()
-//     if (url.match(match.url) === null) {
-//         load()
-//         return
-//     }
+function add({ state }: { state: SFn }): void {
+    const { getState, updateState }: SFn = state
+    const s: State = getState()
+    const { mode, addHub }: State = s
 
-//     fetch(`/${streamAlias}`, { method: "PUT", body: url })
-//         .then(() => load())
-//         .catch((err) => {
-//             root.classList.remove("loading")
-//             root.classList.add("error")
-//             error.textContent = err.message
-//         })
-// })
+    if (!addHub) return
+
+    try {
+        new URL(addHub).toString()
+    } catch (e) {
+        err(e)
+        return
+    }
+
+    const selected: StreamData = selectedStream(s)
+
+    updateState({ addHub: "" })
+
+    const isLive: boolean = mode === Mode.live
+    const url: string = isLive ? selected.admin : dummyHubDataURL.next().value
+    const options: RequestInit = isLive
+        ? { method: "PUT", body: addHub }
+        : { method: "GET" }
+    fetch(url, options)
+        .then((): void => {
+            getHubs({ state })
+        })
+        .catch((error: Error): void => {
+            if (error.name === "TypeError") {
+                error.name = "NetworkError"
+            }
+            err({ error, debug: !isLive })
+        })
+}
+
+function rm({ state }: { state: SFn }): void {
+    const { getState, updateState }: SFn = state
+    const s: State = getState()
+    const { mode, rmHub }: State = s
+    if (!rmHub) return
+
+    const selected: StreamData = selectedStream(s)
+
+    updateState({ rmHub: "" })
+
+    const isLive: boolean = mode === Mode.live
+    const url: string = isLive ? selected.admin : dummyHubDataURL.next().value
+    const options: RequestInit = isLive
+        ? { method: "DELETE", body: rmHub }
+        : { method: "GET" }
+
+    fetch(url, options)
+        .then((): void => {
+            getHubs({ state })
+        })
+        .catch((error: Error): void => {
+            if (error.name === "TypeError") {
+                error.name = "NetworkError"
+            }
+            err({ error, debug: !isLive })
+        })
+}
+
+export function hubGen({ state }: { state: SFn }): void {
+    const { getState, subscribe }: SFn = state
+    // add hub -> from user provided hub url
+    // get hubs -> stream-hub url
+    // delete hub -> id returned from hub url req
+    subscribe((oldState: State): void => {
+        const current: State = getState()
+
+        onDiff({
+            current,
+            previous: oldState,
+            selector: aHubSel
+        }).do((): void => add({ state }))
+
+        onDiff({
+            current,
+            previous: oldState,
+            selector: rmHubSel
+        }).do((): void => rm({ state }))
+
+        onDiff({
+            current,
+            previous: oldState,
+            selector: vStreamsSel
+        }).do((index: number): void => {
+            if (!current.hubs[index]?.length) {
+                getHubs({ state })
+            }
+        })
+    })
+}

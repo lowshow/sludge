@@ -1,10 +1,9 @@
 import { State, SFn } from "./main.js"
 import { onDiff } from "./state.js"
 import { emt, el, mnt, atr, MntFn } from "./dom.js"
-import { row, col12, loader, tabs, tab, coll, colli } from "./atoms.js"
-import { streamsSel, StreamData } from "./stream.js"
+import { row, col12, loader } from "./atoms.js"
 import { createViewGen } from "./createView.js"
-import { nextTick } from "./util.js"
+import { listViewGen } from "./listView.js"
 
 export enum View {
     create,
@@ -28,77 +27,6 @@ function emptyViewGen(): HTMLDivElement {
 
 function loadingViewGen(): HTMLDivElement {
     return row(col12(loader()))
-}
-
-function buildStreamList(streams: StreamData[]): HTMLDivElement {
-    const tabsEl: HTMLUListElement = tabs(
-        streams.map(
-            (_: StreamData, index: number): HTMLLIElement =>
-                tab({
-                    label: `Stream ${index + 1}`,
-                    id: `#stream${index}`,
-                    active: index === streams.length - 1
-                })
-        )
-    )
-    const streamsEl: HTMLDivElement[] = streams.map(
-        (stream: StreamData, index: number): HTMLDivElement =>
-            mnt(
-                atr(col12([])).map([
-                    ["id", `stream${index}`],
-                    ["className", "grey darken-4"]
-                ])
-            )(
-                coll(
-                    Object.entries(stream).map(
-                        ([key, value]: [string, string]): HTMLLIElement => {
-                            return colli({
-                                icon: "content_paste",
-                                text: `${key}: ${value}`
-                            })
-                        }
-                    )
-                )
-            )
-    )
-
-    const wrap: HTMLDivElement = mnt(
-        el("div", (): void => {
-            if (streams.length) {
-                nextTick((): void => {
-                    M.Tabs.init(tabsEl, { swipeable: true })
-                })
-            }
-        })
-    )(row([col12([tabsEl, ...streamsEl])]))
-
-    return wrap
-}
-
-function listViewGen({
-    state: { getState, updateState, subscribe }
-}: {
-    state: SFn
-}): HTMLDivElement {
-    // const info: HTMLPreElement = el("pre")
-    // function setInfo(data: StreamData[]): void {
-    //     atr(info).prop("textContent")(JSON.stringify(data, null, 4))
-    // }
-    // setInfo(getState().streams)
-    const view: HTMLDivElement = el("div")
-    const viewMnt: MntFn<HTMLDivElement> = mnt(view)
-
-    subscribe((oldState: State): void => {
-        onDiff({
-            current: getState(),
-            previous: oldState,
-            selector: streamsSel
-        }).do((streams: StreamData[]): void => {
-            emt(view)
-            viewMnt(buildStreamList(streams))
-        })
-    })
-    return viewMnt(buildStreamList(getState().streams))
 }
 
 export function views({

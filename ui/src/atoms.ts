@@ -1,4 +1,5 @@
-import { el, mnt, atr } from "./dom.js"
+import { el, mnt, atr, lstn } from "./dom.js"
+import { F } from "./interfaces.js"
 
 export function addBtn(): HTMLButtonElement {
     return mnt(
@@ -36,9 +37,9 @@ export function toast(message: string): void {
 }
 
 export function tabs(children: HTMLElement | HTMLElement[]): HTMLUListElement {
-    return mnt(
-        atr(el("ul")).prop("className")("tabs blue-grey tabs-fixed-width")
-    )(children)
+    return mnt(atr(el("ul")).prop("className")("tabs black tabs-fixed-width"))(
+        children
+    )
 }
 
 export function tab({
@@ -51,30 +52,27 @@ export function tab({
     active?: boolean
 }): HTMLLIElement {
     return mnt(
-        atr(el("li")).prop("className")(`tab col ${active ? "active" : ""}`)
+        atr(el("li")).prop("className")(`tab ${active ? "active" : ""}`)
     )(
         atr(el("a")).map([
-            ["className", "black-text"],
             ["href", id],
             ["textContent", label]
         ])
     )
 }
 
-export function coll(children: HTMLElement | HTMLElement[]): HTMLUListElement {
+export function iterW(children: HTMLElement | HTMLElement[]): HTMLUListElement {
     return mnt(atr(el("ul")).prop("className")("collection"))(children)
 }
 
-export function colli({
+export function iter({
     icon,
     text
 }: {
     text: string
     icon: string
 }): HTMLLIElement {
-    return mnt(
-        atr(el("li")).prop("className")("collection-item grey darken-3")
-    )(
+    return mnt(atr(el("li")).prop("className")("collection-item black"))(
         mnt(atr(el("div")).map([["textContent", text]]))([
             mnt(
                 atr(el("button")).map([
@@ -88,4 +86,40 @@ export function colli({
             )
         ])
     )
+}
+
+export function collW(children: HTMLElement | HTMLElement[]): HTMLUListElement {
+    return mnt(atr(el("ul")).prop("className")("collapsible"))(children)
+}
+
+export function coll({
+    label,
+    btnLabel,
+    onButtonClick,
+    text
+}: {
+    label: string
+    btnLabel: string
+    text: string
+    onButtonClick: F<void, void>
+}): HTMLLIElement {
+    const btn: HTMLButtonElement = atr(el("button")).map([
+        ["textContent", btnLabel],
+        ["className", btnClass("btn")]
+    ])
+    lstn(btn)
+        .on("click")
+        .do((event: Event): void => {
+            event.preventDefault()
+            event.stopPropagation()
+            onButtonClick()
+        })
+    return mnt(el("li"))([
+        mnt(
+            atr(el("div")).prop("className")("collapsible-header black spaced")
+        )([atr(el("span")).prop("textContent")(label), btn]),
+        mnt(atr(el("div")).prop("className")("collapsible-body"))(
+            atr(el("span")).prop("innerHTML")(text)
+        )
+    ])
 }

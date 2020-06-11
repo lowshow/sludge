@@ -3,6 +3,7 @@ import { el, mnt, atr, lstn } from "./dom.js"
 import { initState, StateFns, onDiff } from "./state.js"
 import { View, views, viewSel } from "./view.js"
 import { addBtn } from "./atoms.js"
+import { HubData, hubGen } from "./hub.js"
 
 export enum Mode {
     dummy,
@@ -15,9 +16,12 @@ export interface State {
     view: View
     addStream: string
     createStream: boolean
+    addHub: string
+    rmHub: string
     mode: Mode
     streams: StreamData[]
-    hubs: { [index: string]: string[] }
+    hubs: { [index: number]: HubData[] }
+    viewStreamIndex: number
 }
 
 export type SFn = StateFns<State>
@@ -93,9 +97,12 @@ export function main({ container }: { container: HTMLElement }): void {
         view: View.empty,
         addStream: "",
         createStream: false,
+        addHub: "",
+        rmHub: "",
         mode: Mode.dummy,
         streams: [],
-        hubs: {}
+        hubs: {},
+        viewStreamIndex: -1
     })
     const viewWrap: HTMLDivElement = viewContainer()
     mnt(container)([
@@ -109,4 +116,5 @@ export function main({ container }: { container: HTMLElement }): void {
         container: viewWrap
     })
     streamGen({ state })
+    hubGen({ state })
 }

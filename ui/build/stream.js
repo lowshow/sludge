@@ -12,37 +12,25 @@ export function aStreamSel(state) {
 export function streamsSel(state) {
     return state.streams;
 }
+export function vStreamsSel(state) {
+    return state.viewStreamIndex;
+}
+export function selectedStream(state) {
+    return streamsSel(state)[vStreamsSel(state)];
+}
 function parseData(data) {
-    const idMatch = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
-    const match = {
-        streamUI: "url",
-        stream: idMatch,
-        playlist: idMatch,
-        hub: `${idMatch}\/hubs`
-    };
     if (typeof data !== "object") {
         throw Error("Invalid data");
     }
-    return Object.keys(match).reduce((prev, curr) => {
-        if (curr in data) {
-            if (match[curr] === "url") {
-                try {
-                    new URL(data[curr]).toString();
-                    prev[curr] = data[curr];
-                    return prev;
-                }
-                catch (_a) {
-                    throw Error(`Data invalid ${curr}`);
-                }
-            }
-            else if (data[curr].match(match[curr]) !== null) {
-                prev[curr] = data[curr];
-                return prev;
-            }
-            throw Error(`Data invalid ${curr}`);
-        }
-        throw Error(`Data missing ${curr}`);
-    }, match);
+    try {
+        new URL(data.admin).toString();
+        new URL(data.download).toString();
+        new URL(data.hub).toString();
+    }
+    catch (_a) {
+        throw Error("Invalid data");
+    }
+    return data;
 }
 function getStream({ isLive, options, state: { getState, updateState }, url }) {
     fetch(url, options)
@@ -50,7 +38,11 @@ function getStream({ isLive, options, state: { getState, updateState }, url }) {
         .then(parseData)
         .then((data) => {
         const streams = [...getState().streams, data];
-        updateState({ view: View.list, streams });
+        updateState({
+            view: View.list,
+            streams,
+            viewStreamIndex: streams.length - 1
+        });
     })
         .catch((error) => {
         updateState({ view: View.list });
@@ -68,7 +60,7 @@ function create({ state }) {
     // set stream to loading page
     updateState({ view: View.loading, createStream: false });
     const isLive = mode === Mode.live;
-    const url = isLive ? "/stream" : dummyStreamDataURL();
+    const url = isLive ? "/stream" : dummyStreamDataURL.next().value;
     const options = { method: isLive ? "POST" : "GET" };
     getStream({ url, options, isLive, state });
 }
@@ -87,19 +79,20 @@ function add({ state }) {
     // set stream to loading page
     updateState({ view: View.loading, addStream: "" });
     const isLive = mode === Mode.live;
-    const url = isLive ? addStream : dummyStreamDataURL();
+    const url = isLive ? addStream : dummyStreamDataURL.next().value;
     getStream({ isLive, options: {}, state, url });
 }
 export function streamGen({ state }) {
     const { getState, subscribe } = state;
     subscribe((oldState) => {
+        const current = getState();
         onDiff({
-            current: getState(),
+            current,
             previous: oldState,
             selector: cStreamSel
         }).do(() => create({ state }));
         onDiff({
-            current: getState(),
+            current,
             previous: oldState,
             selector: aStreamSel
         }).do(() => add({ state }));

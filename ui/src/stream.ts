@@ -6,9 +6,8 @@ import { View } from "./view.js"
 import { err } from "./errors.js"
 
 export interface StreamData {
-    streamUI: string
-    stream: string
-    playlist: string
+    admin: string
+    download: string
     hub: string
 }
 
@@ -24,42 +23,28 @@ export function streamsSel(state: State): StreamData[] {
     return state.streams
 }
 
+export function vStreamsSel(state: State): number {
+    return state.viewStreamIndex
+}
+
+export function selectedStream(state: State): StreamData {
+    return streamsSel(state)[vStreamsSel(state)]
+}
+
 function parseData(data: Maybe<StreamData>): StreamData {
-    const idMatch: string =
-        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-
-    const match: StreamData = {
-        streamUI: "url",
-        stream: idMatch,
-        playlist: idMatch,
-        hub: `${idMatch}\/hubs`
-    }
-
     if (typeof data !== "object") {
         throw Error("Invalid data")
     }
 
-    return (Object.keys(match) as (keyof StreamData)[]).reduce(
-        (prev: StreamData, curr: keyof StreamData): StreamData => {
-            if (curr in data) {
-                if (match[curr] === "url") {
-                    try {
-                        new URL(data[curr]).toString()
-                        prev[curr] = data[curr]
-                        return prev
-                    } catch {
-                        throw Error(`Data invalid ${curr}`)
-                    }
-                } else if (data[curr].match(match[curr]) !== null) {
-                    prev[curr] = data[curr]
-                    return prev
-                }
-                throw Error(`Data invalid ${curr}`)
-            }
-            throw Error(`Data missing ${curr}`)
-        },
-        match
-    )
+    try {
+        new URL(data.admin).toString()
+        new URL(data.download).toString()
+        new URL(data.hub).toString()
+    } catch {
+        throw Error("Invalid data")
+    }
+
+    return data
 }
 
 function getStream({
@@ -78,7 +63,11 @@ function getStream({
         .then(parseData)
         .then((data: StreamData): void => {
             const streams: StreamData[] = [...getState().streams, data]
-            updateState({ view: View.list, streams })
+            updateState({
+                view: View.list,
+                streams,
+                viewStreamIndex: streams.length - 1
+            })
         })
         .catch((error: Error): void => {
             updateState({ view: View.list })
@@ -96,7 +85,7 @@ function create({ state }: { state: SFn }): void {
     // set stream to loading page
     updateState({ view: View.loading, createStream: false })
     const isLive: boolean = mode === Mode.live
-    const url: string = isLive ? "/stream" : dummyStreamDataURL()
+    const url: string = isLive ? "/stream" : dummyStreamDataURL.next().value
     const options: RequestInit = { method: isLive ? "POST" : "GET" }
     getStream({ url, options, isLive, state })
 }
@@ -114,21 +103,24 @@ function add({ state }: { state: SFn }): void {
     // set stream to loading page
     updateState({ view: View.loading, addStream: "" })
     const isLive: boolean = mode === Mode.live
-    const url: string = isLive ? addStream : dummyStreamDataURL()
+    const url: string = isLive ? addStream : dummyStreamDataURL.next().value
     getStream({ isLive, options: {}, state, url })
 }
 
 export function streamGen({ state }: { state: SFn }): void {
     const { getState, subscribe }: SFn = state
+
     subscribe((oldState: State): void => {
+        const current: State = getState()
+
         onDiff({
-            current: getState(),
+            current,
             previous: oldState,
             selector: cStreamSel
         }).do((): void => create({ state }))
 
         onDiff({
-            current: getState(),
+            current,
             previous: oldState,
             selector: aStreamSel
         }).do((): void => add({ state }))

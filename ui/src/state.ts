@@ -20,7 +20,7 @@ export function initState<T>(state: T): StateFns<T> {
     return {
         getState: (): T => state,
         updateState: (newState: Partial<T>): void => {
-            const oldState: T = Object.assign({}, state)
+            const oldState: T = JSON.parse(JSON.stringify(state))
             Object.assign(state, newState)
             subscribers.forEach((sub: F<T, void>): void => sub(oldState))
         },
@@ -46,7 +46,8 @@ export function onDiff<T, U>({
     return {
         do: (fn: F<U, void>): void => {
             const curr: U = selector(current)
-            if (selector(previous) !== curr) fn(curr)
+            if (JSON.stringify(selector(previous)) !== JSON.stringify(curr))
+                fn(curr)
         }
     }
 }
