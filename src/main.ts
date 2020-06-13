@@ -8,7 +8,7 @@ import { Segment, Hub } from "./common/interfaces.ts"
 import * as sqlite from "https://deno.land/x/sqlite/mod.ts"
 import { initDb, DBActions, getDBActions } from "./db.ts"
 import { handleForm } from "./upload.ts"
-import { createStream } from "./stream.ts"
+import { createStream, getStream } from "./stream.ts"
 import { addHub, getHubs, removeHub } from "./hub.ts"
 
 // TODO: add doc
@@ -24,6 +24,7 @@ export interface MainFnArgs {
 interface HandleGetFnArgs {
     req: ServerRequest
     dbActions: DBActions
+    publicUrl: string
 }
 
 // TODO: add doc
@@ -57,9 +58,20 @@ interface HandleReqFn {
     fileUrl: string
 }
 
-// TODO: add doc
+/**
+ * GET requests
+ *
+ * `/<alias>/hubs` -> fetch stream hub list
+ *
+ * `/<alias>/admin` -> fetch stream info
+ *
+ * `/<id>` -> fetch stream playlist
+ *
+ * `/<id>/<segment id>` -> fetch stream playlist after segment
+ */
 async function handleGet({
     dbActions,
+    publicUrl,
     req
 }: HandleGetFnArgs): Promise<Response> {
     const path: string[] = req.url.split("/")
@@ -86,19 +98,33 @@ async function handleGet({
                 status: 200,
                 headers
             }
-        }
+        } else if (path[2] === "admin") {
+            return {
+                body: new TextEncoder().encode(
+                    JSON.stringify(
+                        await getStream({
+                            alias: path[1],
+                            dbActions,
+                            publicUrl
+                        })
+                    )
+                ),
+                status: 200,
+                headers
+            }
+        } else {
+            // return playlist
+            // /<stream id>/<segment?>
+            const idList: Segment[] = await dbActions.getSegments({
+                streamId: path[1],
+                segmentId: v4.validate(path[2]) ? path[2] : undefined
+            })
 
-        // return playlist
-        // /<stream id>/<segment?>
-        const idList: Segment[] = await dbActions.getSegments({
-            streamId: path[1],
-            segmentId: v4.validate(path[2]) ? path[2] : undefined
-        })
-
-        return {
-            body: new TextEncoder().encode(JSON.stringify(idList)),
-            status: 200,
-            headers
+            return {
+                body: new TextEncoder().encode(JSON.stringify(idList)),
+                status: 200,
+                headers
+            }
         }
     } catch (e) {
         return {
@@ -108,7 +134,13 @@ async function handleGet({
     }
 }
 
-// TODO: add doc
+/**
+ * POST request
+ *
+ * `/<alias>` -> upload audio
+ *
+ * `/stream` -> create new stream
+ */
 async function handlePost({
     dbActions,
     fileUrl,
@@ -119,7 +151,7 @@ async function handlePost({
     const path: string[] = req.url.split("/")
 
     try {
-        if (path[1] === "stream" && !path[2]) {
+        if (path[1] === "stream") {
             // create stream id
             return await createStream({ dbActions, rootDir, publicUrl })
         }
@@ -146,7 +178,11 @@ async function handlePost({
     }
 }
 
-// handle hub put
+/**
+ * PUT reqest
+ *
+ * `/<alias>/admin` -> add hub to stream
+ */
 async function handlePut({
     req,
     dbActions,
@@ -154,7 +190,7 @@ async function handlePut({
 }: HandlePutFnArgs): Promise<Response> {
     const path: string[] = req.url.split("/")
     try {
-        if (!v4.validate(path[1])) {
+        if (!v4.validate(path[1]) || path[2] !== "admin") {
             throw Error("Invalid path")
         }
 
@@ -187,14 +223,18 @@ async function handlePut({
     }
 }
 
-// handle hub delete
+/**
+ * DELETE reqest
+ *
+ * `/<alias>/admin` -> rm hub from stream
+ */
 async function handleDelete({
     req,
     dbActions
 }: HandleDeleteFnArgs): Promise<Response> {
     const path: string[] = req.url.split("/")
     try {
-        if (!v4.validate(path[1])) {
+        if (!v4.validate(path[1]) || path[2] !== "admin") {
             throw Error("Invalid path")
         }
 
@@ -250,7 +290,7 @@ async function handleReq({
 }: HandleReqFn): Promise<Response> {
     switch (req.method) {
         case "GET":
-            return await handleGet({ req, dbActions })
+            return await handleGet({ req, dbActions, publicUrl })
         case "POST":
             return await handlePost({
                 req,

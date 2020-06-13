@@ -13,12 +13,7 @@ function tabInner({
     child: HTMLElement
     id: string
 }): HTMLDivElement {
-    return mnt(
-        atr(el("div")).map([
-            ["className", "tab_inner black"],
-            ["id", id]
-        ])
-    )(child)
+    return mnt(el("div", { attr: { className: "tab_inner black", id } }))(child)
 }
 
 function hubList({
@@ -85,10 +80,12 @@ function hubList({
         )
 
         return mnt(
-            el("div", (): void => {
-                nextTick((): void => {
-                    M.Collapsible.init(inner)
-                })
+            el("div", {
+                onMount: (): void => {
+                    nextTick((): void => {
+                        M.Collapsible.init(inner)
+                    })
+                }
             })
         )(inner)
     }
@@ -119,7 +116,7 @@ function buildStreamList({
 }): HTMLDivElement {
     const tabsEl: HTMLUListElement = tabs([
         tab({
-            label: `Stream info`,
+            label: `Info`,
             id: `#streamInfo`,
             active: true
         }),
@@ -137,7 +134,7 @@ function buildStreamList({
             onButtonClick: (): void => {
                 copyURL(current.admin)
             },
-            text: `${current.admin}<br />This is why the admin URL`
+            text: `<input class="url" type="text" value="${current.admin}" />GET: Retrieve these URLs.<br />POST: Upload audio stream segment.`
         }),
         coll({
             label: "Download",
@@ -145,7 +142,7 @@ function buildStreamList({
             onButtonClick: (): void => {
                 copyURL(current.download)
             },
-            text: `${current.download}<br />This is why the download/playlist URL`
+            text: `<input class="url" type="text" value="${current.download}" />GET: Retrieve stream segment playlist.`
         }),
         coll({
             label: "Hubs",
@@ -153,16 +150,18 @@ function buildStreamList({
             onButtonClick: (): void => {
                 copyURL(current.hub)
             },
-            text: `${current.hub}<br />This is why the hubs URL`
+            text: `<input class="url" type="text" value="${current.hub}" />GET: Retrieve stream hubs.<br />PUT: Add hub to stream.<br />DELETE: Remove hub from stream.`
         })
     ])
 
     const wrap: HTMLDivElement = mnt(
-        el("div", (): void => {
-            nextTick((): void => {
-                M.Tabs.init(tabsEl, { swipeable: true })
-                M.Collapsible.init(collapse)
-            })
+        el("div", {
+            onMount: (): void => {
+                nextTick((): void => {
+                    M.Tabs.init(tabsEl, { swipeable: true })
+                    M.Collapsible.init(collapse)
+                })
+            }
         })
     )(
         row([

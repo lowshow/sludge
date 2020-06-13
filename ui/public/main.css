@@ -39,3 +39,13 @@ body {
     margin-bottom: 2rem;
     text-align: right;
 }
+
+.btn-group button {
+    margin-left: 18px !important;
+    margin-right: 18px !important;
+}
+
+.url {
+    display: block;
+    color: white;
+}

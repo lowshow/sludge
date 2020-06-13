@@ -5,10 +5,7 @@ import { mnt, el, atr, emt, lstn, cls } from "./dom.js";
 import { onDiff } from "./state.js";
 import { vHubsSel } from "./hub.js";
 function tabInner({ child, id }) {
-    return mnt(atr(el("div")).map([
-        ["className", "tab_inner black"],
-        ["id", id]
-    ]))(child);
+    return mnt(el("div", { attr: { className: "tab_inner black", id } }))(child);
 }
 function hubList({ state: { updateState, getState, subscribe } }) {
     const input = atr(el("input")).map([
@@ -58,10 +55,12 @@ function hubList({ state: { updateState, getState, subscribe } }) {
             });
             return item;
         }));
-        return mnt(el("div", () => {
-            nextTick(() => {
-                M.Collapsible.init(inner);
-            });
+        return mnt(el("div", {
+            onMount: () => {
+                nextTick(() => {
+                    M.Collapsible.init(inner);
+                });
+            }
         }))(inner);
     };
     const listWrap = col12(collapse(vHubsSel(getState())));
@@ -81,7 +80,7 @@ function hubList({ state: { updateState, getState, subscribe } }) {
 function buildStreamList({ current, state }) {
     const tabsEl = tabs([
         tab({
-            label: `Stream info`,
+            label: `Info`,
             id: `#streamInfo`,
             active: true
         }),
@@ -98,7 +97,7 @@ function buildStreamList({ current, state }) {
             onButtonClick: () => {
                 copyURL(current.admin);
             },
-            text: `${current.admin}<br />This is why the admin URL`
+            text: `<input class="url" type="text" value="${current.admin}" />GET: Retrieve these URLs.<br />POST: Upload audio stream segment.`
         }),
         coll({
             label: "Download",
@@ -106,7 +105,7 @@ function buildStreamList({ current, state }) {
             onButtonClick: () => {
                 copyURL(current.download);
             },
-            text: `${current.download}<br />This is why the download/playlist URL`
+            text: `<input class="url" type="text" value="${current.download}" />GET: Retrieve stream segment playlist.`
         }),
         coll({
             label: "Hubs",
@@ -114,14 +113,16 @@ function buildStreamList({ current, state }) {
             onButtonClick: () => {
                 copyURL(current.hub);
             },
-            text: `${current.hub}<br />This is why the hubs URL`
+            text: `<input class="url" type="text" value="${current.hub}" />GET: Retrieve stream hubs.<br />PUT: Add hub to stream.<br />DELETE: Remove hub from stream.`
         })
     ]);
-    const wrap = mnt(el("div", () => {
-        nextTick(() => {
-            M.Tabs.init(tabsEl, { swipeable: true });
-            M.Collapsible.init(collapse);
-        });
+    const wrap = mnt(el("div", {
+        onMount: () => {
+            nextTick(() => {
+                M.Tabs.init(tabsEl, { swipeable: true });
+                M.Collapsible.init(collapse);
+            });
+        }
     }))(row([
         col12([
             tabsEl,

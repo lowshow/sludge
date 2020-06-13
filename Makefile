@@ -1,8 +1,8 @@
 PERM0=--allow-env --allow-net --unstable
 PERM1=--allow-write="$(HOME)/.sludge" --allow-read="$(HOME)/.sludge"
 PERM=$(PERM0) $(PERM1)
-ARGS0=--dir="$(HOME)/.sludge" --port="8000" --public="http://localhost:5335"
-ARGS1=--files="http://localhost:5335/audio/"
+ARGS0=--dir="$(HOME)/.sludge" --port="8000" --public="$(SLUDGE_PUBLIC)"
+ARGS1=--files="$(SLUDGE_FILES)"
 ARGS=$(ARGS0) $(ARGS1)
 
 init:

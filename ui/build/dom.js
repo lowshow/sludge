@@ -12,9 +12,15 @@ export function getEl({ selector, timeout = 1000 }) {
     });
 }
 // TODO: add doc
-export function el(tagName, onMount) {
+export function el(tagName, options) {
     const element = document.createElement(tagName);
-    Object.assign(element, { onMount });
+    if (options) {
+        const { onMount, attr } = options;
+        if (onMount)
+            Object.assign(element, { onMount });
+        if (attr)
+            atr(element).obj(attr);
+    }
     return element;
 }
 export function atr(element) {
@@ -27,6 +33,13 @@ export function atr(element) {
         },
         prop: (property) => (value) => {
             element[property] = value;
+            return element;
+        },
+        obj: (attributes) => {
+            ;
+            Object.entries(attributes).forEach(([p, v]) => {
+                element[p] = v;
+            });
             return element;
         }
     };
@@ -83,7 +96,14 @@ export function emt(element) {
 // TODO: add doc
 export function cls(element) {
     return (className) => {
-        element.classList.toggle(className);
+        if (Array.isArray(className)) {
+            className.forEach((c) => {
+                element.classList.toggle(c);
+            });
+        }
+        else {
+            element.classList.toggle(className);
+        }
         return element;
     };
 }

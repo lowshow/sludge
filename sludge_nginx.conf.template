@@ -1,38 +1,54 @@
-# open to public url
-# need path to data dir
-# / -> sludge UI
-# /stream/<stream id> -> splutter UI
-# /audio/<stream id>/<segment id> -> data dir
-# /hubs/<stream alias> -> hubs UI
-# /<stream id/alias> -> app proxy
-
 server {
-    listen                                  {{port}};
-    server_name                             {{location}};
+    listen                          {{port}};
+    server_name                     {{location}};
     
-    gzip                                    on;
-    gzip_types                              text/plain application/xml;
+    gzip                            on;
+    gzip_types                      text/plain application/xml;
 
-    location ~ "\/([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})" {
-        proxy_pass                          {{sludge_location}};
-        proxy_set_header Host               $host;
-        proxy_set_header X-Real-IP          $remote_addr;
+    # alias/id path handling (hubs put/del, upload post, playlist get)
+
+    location ~ "^/([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})" {
+        proxy_pass                  {{sludge_location}};
+        proxy_set_header Host       $host;
+        proxy_set_header X-Real-IP  $remote_addr;
+    }
+
+    # stream UI (splutter)
+    # getting ID from path match, passing into proxy as $1
+    # assumes stream UI is hosted under the same host
+
+    location ~ "^/upload/([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})" {
+        proxy_pass                  {{sludge_location}}/$1;
+        proxy_set_header Host       $host;
+        proxy_set_header X-Real-IP  $remote_addr;
+    }
+
+    # stream create
+
+    location /stream {
+        proxy_pass                  {{sludge_location}}/stream;
+        proxy_set_header Host       $host;
+        proxy_set_header X-Real-IP  $remote_addr;
+    }
+
+    # audio files
+
+    location ~ "^/audio/([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})/([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\.opus)$" {
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Methods' 'GET, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+        alias                       {{home_path}}/.sludge/audio/$1/$2;
+    }
+
+    # sludge UI
+
+    location /static {
+        alias                       {{project_path}}/ui/build;
     }
 
     location / {
-        alias                               {{project_path}}/public/sludge;
-    }
-
-    location /stream {
-        alias                               {{project_path}}/public/splutter;
-    }
-
-    location /hubs {
-        alias                               {{project_path}}/public/hubs;
-    }
-
-    location /audio {
-        root                                {{data_path}}/audio;
-        try_files                           $uri $uri/ index.html;
+        root                        {{project_path}}/ui/public;
+        try_files                   $uri $uri/ index.html;
     }
 }

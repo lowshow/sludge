@@ -2,13 +2,27 @@ import { SFn, State } from "./main.js"
 import { atr, el, lstn, mnt, cls } from "./dom.js"
 import { btnClass, toast, row, col12 } from "./atoms.js"
 import { onDiff } from "./state.js"
-import { aStreamSel } from "./stream.js"
+import { aStreamSel, StreamData } from "./stream.js"
+import { View } from "./view.js"
 
 export function createViewGen({
     state: { getState, updateState, subscribe }
 }: {
     state: SFn
 }): HTMLDivElement {
+    const back: HTMLButtonElement = el("button", {
+        attr: {
+            textContent: "Back to list",
+            className: btnClass("btn-large")
+        }
+    })
+
+    lstn(back)
+        .on("click")
+        .do((): void => {
+            updateState({ view: View.list })
+        })
+
     const create: HTMLButtonElement = atr(el("button")).map([
         ["textContent", "Create new stream"],
         ["className", btnClass("btn-large")]
@@ -57,6 +71,15 @@ export function createViewGen({
         .on("submit")
         .do((event: Event): void => {
             event.preventDefault()
+            if (
+                getState().streams.findIndex(
+                    (stream: StreamData): boolean =>
+                        stream.admin === input.value
+                ) > -1
+            ) {
+                toast("Stream already added.")
+                return
+            }
             updateState({ addStream: input.value })
         })
 
@@ -67,6 +90,7 @@ export function createViewGen({
                 atr(el("h6")).map([["textContent", "or add existing stream:"]])
             )
         ),
-        row(col12(add))
+        row(col12(add)),
+        row(col12(back))
     ])
 }

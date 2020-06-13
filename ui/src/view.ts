@@ -1,7 +1,7 @@
 import { State, SFn } from "./main.js"
 import { onDiff } from "./state.js"
-import { emt, el, mnt, atr, MntFn } from "./dom.js"
-import { row, col12, loader } from "./atoms.js"
+import { emt, el, mnt, atr, MntFn, cls } from "./dom.js"
+import { row, col12, loader, btnClass } from "./atoms.js"
 import { createViewGen } from "./createView.js"
 import { listViewGen } from "./listView.js"
 

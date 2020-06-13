@@ -9,6 +9,33 @@ interface CreateStreamFnArgs {
     publicUrl: string
 }
 
+interface StreamData {
+    admin: string
+    download: string
+    hub: string
+}
+
+// TODO: add docs
+export async function getStream({
+    alias,
+    dbActions,
+    publicUrl
+}: {
+    alias: string
+    dbActions: DBActions
+    publicUrl: string
+}): Promise<StreamData> {
+    const { id } = await dbActions.getStream({ alias })
+    // return public path for upload/ UI/ public stream
+    const streamData: StreamData = {
+        admin: new URL(`${alias}/admin`, publicUrl).toString(),
+        download: new URL(id, publicUrl).toString(),
+        hub: new URL(`${alias}/hubs`, publicUrl).toString()
+    }
+
+    return streamData
+}
+
 // TODO: add docs
 export async function createStream({
     dbActions,
@@ -27,16 +54,10 @@ export async function createStream({
     })
     const headers = new Headers()
     headers.set("content-type", "application/json")
-    // return public path for upload/ UI/ public stream
+
     return {
         body: new TextEncoder().encode(
-            JSON.stringify({
-                streamUI: new URL(`stream/${alias}`, publicUrl).toString(),
-                stream: new URL(alias, publicUrl).toString(),
-                playlist: new URL(id, publicUrl).toString(),
-                hub: new URL(`${alias}/hubs`, publicUrl).toString(),
-                hubUI: new URL(`hubs/${alias}`, publicUrl).toString()
-            })
+            JSON.stringify(await getStream({ alias, publicUrl, dbActions }))
         ),
         status: 200,
         headers

@@ -19,20 +19,31 @@ export function getEl<T extends HTMLElement>({
     })
 }
 
+type PropObj<T> = { [property in keyof T]: ValueOf<T> }
+type SetAttrObj<T> = (attributes: Partial<PropObj<T>>) => T
+interface ElOptions<T> {
+    onMount?: F<void, void>
+    attr?: Partial<PropObj<T>>
+}
+type El<T extends keyof HTMLElementTagNameMap> = HTMLElementTagNameMap[T]
 // TODO: add doc
 export function el<K extends keyof HTMLElementTagNameMap>(
     tagName: K,
-    onMount?: F<void, void>
-): HTMLElementTagNameMap[K] {
-    const element: HTMLElementTagNameMap[K] = document.createElement(tagName)
-    Object.assign(element, { onMount })
+    options?: ElOptions<El<K>>
+): El<K> {
+    const element: El<K> = document.createElement(tagName)
+    if (options) {
+        const { onMount, attr }: ElOptions<El<K>> = options
+        if (onMount) Object.assign(element, { onMount })
+        if (attr) atr(element).obj(attr)
+    }
     return element
 }
 
 type SetAttr<T> = (property: keyof T) => SetAttrAs<T>
 type SetAttrAs<T> = (value: ValueOf<T>) => T
 type SetAttrMap<T> = (attributeMap: [keyof T, ValueOf<T>][]) => T
-type AtrReturn<T> = { prop: SetAttr<T>; map: SetAttrMap<T> }
+type AtrReturn<T> = { prop: SetAttr<T>; map: SetAttrMap<T>; obj: SetAttrObj<T> }
 export function atr<T extends HTMLElement>(element: T): AtrReturn<T> {
     return {
         map: (attributeMap: [keyof T, ValueOf<T>][]): T => {
@@ -43,6 +54,14 @@ export function atr<T extends HTMLElement>(element: T): AtrReturn<T> {
         },
         prop: (property: keyof T): SetAttrAs<T> => (value: ValueOf<T>): T => {
             element[property] = value
+            return element
+        },
+        obj: (attributes: Partial<PropObj<T>>): T => {
+            ;(Object.entries(attributes) as [keyof T, ValueOf<T>][]).forEach(
+                ([p, v]: [keyof T, ValueOf<T>]): void => {
+                    element[p] = v
+                }
+            )
             return element
         }
     }
@@ -134,9 +153,15 @@ export function emt(element: HTMLElement): void {
 // TODO: add doc
 export function cls<T extends HTMLElement>(
     element: T
-): (className: string) => T {
-    return (className: string): T => {
-        element.classList.toggle(className)
+): (className: string | string[]) => T {
+    return (className: string | string[]): T => {
+        if (Array.isArray(className)) {
+            className.forEach((c: string): void => {
+                element.classList.toggle(c)
+            })
+        } else {
+            element.classList.toggle(className)
+        }
         return element
     }
 }
