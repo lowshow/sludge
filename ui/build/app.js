@@ -1,7 +1,7 @@
 import { getEl } from "./dom.js";
 import { main, Mode } from "./main.js";
 // @ts-ignore
-import { env } from "/env.js";
+import { env } from "../env.js";
 ;
 (async () => {
     try {

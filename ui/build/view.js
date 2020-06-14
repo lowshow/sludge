@@ -3,6 +3,7 @@ import { emt, el, mnt, atr } from "./dom.js";
 import { row, col12, loader } from "./atoms.js";
 import { createViewGen } from "./createView.js";
 import { listViewGen } from "./listView.js";
+import { streamsSel } from "./stream.js";
 export var View;
 (function (View) {
     View[View["create"] = 0] = "create";
@@ -13,10 +14,18 @@ export var View;
 export function viewSel(state) {
     return state.view;
 }
-function emptyViewGen() {
-    // Add Stream
-    // From existing input/button
-    // Create new stream
+function emptyViewGen({ state: { subscribe, getState, updateState } }) {
+    subscribe((previous) => {
+        onDiff({
+            current: getState(),
+            previous,
+            selector: streamsSel
+        }).do((streams) => {
+            if (streams.length) {
+                updateState({ view: View.list });
+            }
+        });
+    });
     return row(col12(atr(el("p")).map([["textContent", "You have no streams."]])));
 }
 function loadingViewGen() {
@@ -28,7 +37,7 @@ export function views({ container, state }) {
     const createView = createViewGen({
         state
     });
-    const emptyView = emptyViewGen();
+    const emptyView = emptyViewGen({ state });
     const loadingView = loadingViewGen();
     const listView = listViewGen({ state });
     setView(View.empty);

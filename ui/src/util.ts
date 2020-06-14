@@ -1,24 +1,5 @@
-import { Resolve, Reject, F } from "./interfaces.js"
+import { Resolve, F } from "./interfaces.js"
 import { el, mnt, umnt } from "./dom.js"
-
-// TODO: add doc
-export function getEl<T extends HTMLElement>({
-    selector,
-    timeout = 1000
-}: {
-    selector: string
-    timeout?: number
-}): Promise<T> {
-    return new Promise((resolve: Resolve<T>, reject: Reject): void => {
-        const base: number = performance.now()
-        requestAnimationFrame((time: number): void => {
-            if (time - base >= timeout) return reject()
-
-            const item: T | null = document.querySelector<T>(selector)
-            if (item) return resolve(item)
-        })
-    })
-}
 
 // TODO: add doc
 export function randInt(from: number, to: number): number {

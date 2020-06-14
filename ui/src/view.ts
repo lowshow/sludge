@@ -1,9 +1,10 @@
 import { State, SFn } from "./main.js"
 import { onDiff } from "./state.js"
-import { emt, el, mnt, atr, MntFn, cls } from "./dom.js"
-import { row, col12, loader, btnClass } from "./atoms.js"
+import { emt, el, mnt, atr, MntFn } from "./dom.js"
+import { row, col12, loader } from "./atoms.js"
 import { createViewGen } from "./createView.js"
 import { listViewGen } from "./listView.js"
+import { streamsSel, StreamData } from "./stream.js"
 
 export enum View {
     create,
@@ -16,10 +17,22 @@ export function viewSel(state: State): View {
     return state.view
 }
 
-function emptyViewGen(): HTMLDivElement {
-    // Add Stream
-    // From existing input/button
-    // Create new stream
+function emptyViewGen({
+    state: { subscribe, getState, updateState }
+}: {
+    state: SFn
+}): HTMLDivElement {
+    subscribe((previous: State): void => {
+        onDiff({
+            current: getState(),
+            previous,
+            selector: streamsSel
+        }).do((streams: StreamData[]): void => {
+            if (streams.length) {
+                updateState({ view: View.list })
+            }
+        })
+    })
     return row(
         col12(atr(el("p")).map([["textContent", "You have no streams."]]))
     )
@@ -41,7 +54,7 @@ export function views({
     const createView: HTMLDivElement = createViewGen({
         state
     })
-    const emptyView: HTMLDivElement = emptyViewGen()
+    const emptyView: HTMLDivElement = emptyViewGen({ state })
     const loadingView: HTMLDivElement = loadingViewGen()
     const listView: HTMLDivElement = listViewGen({ state })
 

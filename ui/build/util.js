@@ -1,18 +1,5 @@
 import { el, mnt, umnt } from "./dom.js";
 // TODO: add doc
-export function getEl({ selector, timeout = 1000 }) {
-    return new Promise((resolve, reject) => {
-        const base = performance.now();
-        requestAnimationFrame((time) => {
-            if (time - base >= timeout)
-                return reject();
-            const item = document.querySelector(selector);
-            if (item)
-                return resolve(item);
-        });
-    });
-}
-// TODO: add doc
 export function randInt(from, to) {
     if (to < from)
         return from;

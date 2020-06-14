@@ -3,6 +3,7 @@ import { Mode } from "./main.js";
 import { dummyStreamDataURL } from "./dummyData.js";
 import { View } from "./view.js";
 import { err } from "./errors.js";
+import { validateStreamData } from "./validate.js";
 function cStreamSel(state) {
     return state.createStream;
 }
@@ -18,24 +19,10 @@ export function vStreamsSel(state) {
 export function selectedStream(state) {
     return streamsSel(state)[vStreamsSel(state)];
 }
-function parseData(data) {
-    if (typeof data !== "object") {
-        throw Error("Invalid data");
-    }
-    try {
-        new URL(data.admin).toString();
-        new URL(data.download).toString();
-        new URL(data.hub).toString();
-    }
-    catch (_a) {
-        throw Error("Invalid data");
-    }
-    return data;
-}
 function getStream({ isLive, options, state: { getState, updateState }, url }) {
     fetch(url, options)
         .then((data) => data.json())
-        .then(parseData)
+        .then(validateStreamData)
         .then((data) => {
         const streams = [...getState().streams, data];
         updateState({
@@ -60,7 +47,9 @@ function create({ state }) {
     // set stream to loading page
     updateState({ view: View.loading, createStream: false });
     const isLive = mode === Mode.live;
-    const url = isLive ? "/stream" : dummyStreamDataURL.next().value;
+    const url = isLive
+        ? new URL("stream", window.location.href)
+        : dummyStreamDataURL.next().value;
     const options = { method: isLive ? "POST" : "GET" };
     getStream({ url, options, isLive, state });
 }

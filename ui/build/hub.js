@@ -4,6 +4,7 @@ import { err } from "./errors.js";
 import { View } from "./view.js";
 import { dummyHubDataURL } from "./dummyData.js";
 import { vStreamsSel, selectedStream } from "./stream.js";
+import { validateHubDataArray } from "./validate.js";
 export function vHubsSel(state) {
     return state.hubs[state.viewStreamIndex] || [];
 }
@@ -16,23 +17,6 @@ export function aHubSel(state) {
 export function rmHubSel(state) {
     return state.rmHub;
 }
-function parseData(data) {
-    if (!Array.isArray(data)) {
-        throw Error("Invalid data");
-    }
-    try {
-        data.forEach((hub) => {
-            new URL(hub.url).toString();
-            if (hub.id.match("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}") === null) {
-                throw Error();
-            }
-        });
-    }
-    catch (_a) {
-        throw Error("Invalid data");
-    }
-    return data;
-}
 function getHubs({ state }) {
     const { getState, updateState } = state;
     const s = getState();
@@ -42,7 +26,7 @@ function getHubs({ state }) {
     const url = isLive ? selected.hub : dummyHubDataURL.next().value;
     fetch(url)
         .then((data) => data.json())
-        .then(parseData)
+        .then(validateHubDataArray)
         .then((data) => {
         const { viewStreamIndex, hubs } = getState();
         updateState({

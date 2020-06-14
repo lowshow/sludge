@@ -1,9 +1,9 @@
-import { Maybe } from "./interfaces.js"
 import { onDiff } from "./state.js"
 import { State, Mode, SFn } from "./main.js"
 import { dummyStreamDataURL } from "./dummyData.js"
 import { View } from "./view.js"
 import { err } from "./errors.js"
+import { validateStreamData } from "./validate.js"
 
 export interface StreamData {
     admin: string
@@ -31,22 +31,6 @@ export function selectedStream(state: State): StreamData {
     return streamsSel(state)[vStreamsSel(state)]
 }
 
-function parseData(data: Maybe<StreamData>): StreamData {
-    if (typeof data !== "object") {
-        throw Error("Invalid data")
-    }
-
-    try {
-        new URL(data.admin).toString()
-        new URL(data.download).toString()
-        new URL(data.hub).toString()
-    } catch {
-        throw Error("Invalid data")
-    }
-
-    return data
-}
-
 function getStream({
     isLive,
     options,
@@ -60,7 +44,7 @@ function getStream({
 }): void {
     fetch(url, options)
         .then((data: Response): Promise<any> => data.json())
-        .then(parseData)
+        .then(validateStreamData)
         .then((data: StreamData): void => {
             const streams: StreamData[] = [...getState().streams, data]
             updateState({
@@ -85,7 +69,9 @@ function create({ state }: { state: SFn }): void {
     // set stream to loading page
     updateState({ view: View.loading, createStream: false })
     const isLive: boolean = mode === Mode.live
-    const url: string = isLive ? "/stream" : dummyStreamDataURL.next().value
+    const url: string = isLive
+        ? new URL("stream", window.location.href)
+        : dummyStreamDataURL.next().value
     const options: RequestInit = { method: isLive ? "POST" : "GET" }
     getStream({ url, options, isLive, state })
 }

@@ -3,8 +3,8 @@ import { onDiff } from "./state.js"
 import { err } from "./errors.js"
 import { View } from "./view.js"
 import { dummyHubDataURL } from "./dummyData.js"
-import { Maybe } from "./interfaces.js"
 import { StreamData, vStreamsSel, selectedStream } from "./stream.js"
+import { validateHubDataArray } from "./validate.js"
 
 export interface HubData {
     id: string
@@ -27,29 +27,6 @@ export function rmHubSel(state: State): string {
     return state.rmHub
 }
 
-function parseData(data: Maybe<HubData[]>): HubData[] {
-    if (!Array.isArray(data)) {
-        throw Error("Invalid data")
-    }
-
-    try {
-        data.forEach((hub: HubData): void => {
-            new URL(hub.url).toString()
-            if (
-                hub.id.match(
-                    "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-                ) === null
-            ) {
-                throw Error()
-            }
-        })
-    } catch {
-        throw Error("Invalid data")
-    }
-
-    return data
-}
-
 function getHubs({ state }: { state: SFn; reload?: boolean }): void {
     const { getState, updateState }: SFn = state
     const s: State = getState()
@@ -61,7 +38,7 @@ function getHubs({ state }: { state: SFn; reload?: boolean }): void {
 
     fetch(url)
         .then((data: Response): Promise<any> => data.json())
-        .then(parseData)
+        .then(validateHubDataArray)
         .then((data: HubData[]): void => {
             const { viewStreamIndex, hubs }: State = getState()
 
