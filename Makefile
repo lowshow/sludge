@@ -1,7 +1,7 @@
 PERM0=--allow-env --allow-net --unstable
 PERM1=--allow-write="$(HOME)/.sludge" --allow-read="$(HOME)/.sludge"
 PERM=$(PERM0) $(PERM1)
-ARGS0=--dir="$(HOME)/.sludge" --port="8000" --public="$(SLUDGE_PUBLIC)"
+ARGS0=--dir="$(HOME)/.sludge" --port="$(SLUDGE_PORT)" --public="$(SLUDGE_PUBLIC)"
 ARGS1=--files="$(SLUDGE_FILES)"
 ARGS=$(ARGS0) $(ARGS1)
 
@@ -9,7 +9,15 @@ init:
 	[[ -d "$(HOME)/.sludge" ]] || mkdir "$(HOME)/.sludge"
 	[[ -d typings ]] || mkdir typings
 	[[ -f typings/deno.d.ts ]] || deno types > typings/deno.d.ts
-	git submodule init
-	cd external/splutter && npm i
+	./setupConfig.sh
 run:
-	deno run $(PERM) src/app.ts $(ARGS)
+	ifndef SLUDGE_FILES
+	$(error SLUDGE_FILES is not set)
+	endif
+	ifndef SLUDGE_PUBLIC
+	$(error SLUDGE_PUBLIC is not set)
+	endif
+	ifndef SLUDGE_PORT
+	$(error SLUDGE_PORT is not set)
+	endif
+	$(HOME)/.deno/bin/deno run $(PERM) src/app.ts $(ARGS)

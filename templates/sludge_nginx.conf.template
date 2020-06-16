@@ -1,24 +1,14 @@
 server {
     listen                          {{port}};
-    server_name                     {{location}};
+    server_name                     {{server_name}};
     
     gzip                            on;
     gzip_types                      text/plain application/xml;
 
     # alias/id path handling (hubs put/del, upload post, playlist get)
 
-    location ~ "^/([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})" {
-        proxy_pass                  {{sludge_location}};
-        proxy_set_header Host       $host;
-        proxy_set_header X-Real-IP  $remote_addr;
-    }
-
-    # stream UI (splutter)
-    # getting ID from path match, passing into proxy as $1
-    # assumes stream UI is hosted under the same host
-
-    location ~ "^/upload/([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})" {
-        proxy_pass                  {{sludge_location}}/$1;
+    location ~ "^/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}" {
+        proxy_pass                  http://127.0.0.1:{{sludge_port}};
         proxy_set_header Host       $host;
         proxy_set_header X-Real-IP  $remote_addr;
     }
@@ -26,7 +16,7 @@ server {
     # stream create
 
     location /stream {
-        proxy_pass                  {{sludge_location}}/stream;
+        proxy_pass                  http://127.0.0.1:{{sludge_port}}/stream;
         proxy_set_header Host       $host;
         proxy_set_header X-Real-IP  $remote_addr;
     }

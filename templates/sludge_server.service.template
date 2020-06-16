@@ -1,0 +1,16 @@
+[Unit]
+Description=sludge server
+After=network.target
+
+[Service]
+Type=simple
+User={{user}}
+WorkingDirectory={{path}}
+Environment="SLUDGE_FILES={{files_url}}"
+Environment="SLUDGE_PUBLIC={{public_url}}"
+Environment="SLUDGE_PORT={{sludge_port}}"
+ExecStart=make run
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
