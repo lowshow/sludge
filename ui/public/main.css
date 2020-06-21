@@ -1,0 +1,51 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-size: 16px;
+    color: white;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+.root {
+    min-height: 100%;
+    overflow: auto;
+}
+
+.rootInner {
+    padding-top: 5rem;
+    padding-bottom: 2rem;
+    min-height: 100%;
+}
+
+.spaced {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dropdown_select {
+    display: block;
+}
+
+.tab_inner {
+    height: 100%;
+    max-height: 100%;
+    overflow: auto;
+}
+
+.form {
+    margin-bottom: 2rem;
+    text-align: right;
+}
+
+.btn-group button {
+    margin-left: 18px !important;
+    margin-right: 18px !important;
+}
+
+.url {
+    display: block;
+    color: white;
+}

@@ -3,155 +3,306 @@ import {
     ServerRequest,
     Response
 } from "https://deno.land/std/http/server.ts"
-import {
-    MultipartReader,
-    MultipartFormData,
-    FormFile
-} from "https://deno.land/std/mime/multipart.ts"
 import { v4 } from "https://deno.land/std/uuid/mod.ts"
-import { readFileStr } from "https://deno.land/std/fs/read_file_str.ts"
-import { Resolve } from "./common/interfaces.ts"
+import { Segment, Hub } from "./common/interfaces.ts"
+import * as sqlite from "https://deno.land/x/sqlite/mod.ts"
+import { initDb, DBActions, getDBActions } from "./db.ts"
+import { handleForm } from "./upload.ts"
+import { createStream, getStream } from "./stream.ts"
+import { addHub, getHubs, removeHub } from "./hub.ts"
 
 // TODO: add doc
-type GetState = (id?: string) => string[][]
-
-// TODO: add doc
-interface FileState {
-    stop: () => void
-    getState: GetState
+export interface MainFnArgs {
+    publicUrl: string
+    port: string
+    rootDir: string
+    dbPath: string
+    fileUrl: string
 }
 
 // TODO: add doc
-async function loadFile(r: MultipartReader): Promise<void> {
-    const data: MultipartFormData = await r.readForm()
-    const formFile: FormFile | undefined = data.file("audio")
-    // we have the file data, connection can close now
-    if (!formFile || !formFile.content) return
-    const uuid = v4.generate()
-    const file = await Deno.open(`out/${uuid}.opus`, {
-        write: true,
-        create: true
-    })
-    await Deno.write(file.rid, formFile.content)
-    Deno.close(file.rid)
-    Promise.resolve()
-    const list = await Deno.open(`out/list`, {
-        write: true,
-        create: true,
-        append: true
-    })
-    await list.write(new TextEncoder().encode(`${uuid}\n`))
-    Deno.close(list.rid)
+interface HandleGetFnArgs {
+    req: ServerRequest
+    dbActions: DBActions
+    publicUrl: string
 }
 
 // TODO: add doc
-async function handleForm(req: ServerRequest): Promise<Response> {
-    const type: string | null = req.headers.get("content-type")
-    if (!type) {
-        return {
-            body: new TextEncoder().encode("Missing content type header\n"),
-            status: 400
+interface HandlePostFnArgs {
+    req: ServerRequest
+    dbActions: DBActions
+    rootDir: string
+    publicUrl: string
+    fileUrl: string
+}
+
+// TODO: add doc
+interface HandlePutFnArgs {
+    req: ServerRequest
+    dbActions: DBActions
+    publicUrl: string
+}
+
+// TODO: add doc
+interface HandleDeleteFnArgs {
+    req: ServerRequest
+    dbActions: DBActions
+}
+
+// TODO: add doc
+interface HandleReqFn {
+    req: ServerRequest
+    dbActions: DBActions
+    rootDir: string
+    publicUrl: string
+    fileUrl: string
+}
+
+/**
+ * GET requests
+ *
+ * `/<alias>/hubs` -> fetch stream hub list
+ *
+ * `/<alias>/admin` -> fetch stream info
+ *
+ * `/<id>` -> fetch stream playlist
+ *
+ * `/<id>/<segment id>` -> fetch stream playlist after segment
+ */
+async function handleGet({
+    dbActions,
+    publicUrl,
+    req
+}: HandleGetFnArgs): Promise<Response> {
+    const path: string[] = req.url.split("/")
+    try {
+        if (!v4.validate(path[1])) {
+            throw Error("Invalid path")
         }
-    }
-    // boundaries are used to communicate request data structure
-    // https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
-    const boundary: string = type.substr(type.indexOf("=") + 1)
-    // need to wait before response, otherwise connection will close
-    // before we have all the data!
-    const reader: MultipartReader = new MultipartReader(req.r, boundary)
-    await loadFile(reader)
-    return { body: new TextEncoder().encode("Success\n"), status: 200 }
-}
 
-// TODO: add doc
-function fileState(publicUrl: string): FileState {
-    const files: string[] = []
-    // Aiming for "eventual" consistency
-    const interval = setInterval(async () => {
-        // File must exist first
-        const content: string = await readFileStr("out/list")
-        const list: string[] = content
-            .split("\n")
-            .filter((item: string) => item !== "")
-            .splice(files.length)
-        list.forEach((item: string): void => {
-            files.push(item)
-        })
-    }, 500)
+        const headers = new Headers()
+        headers.set("content-type", "application/json")
 
-    return {
-        stop: () => {
-            clearInterval(interval)
-        },
-        getState: (from: string = "") => {
-            const index = from === "" ? 0 : files.indexOf(from) + 1
-            if (index === -1) {
-                throw Error("Invalid file ID.")
-            } else if (index === files.length) {
-                return []
-            } else {
-                const list: string[] = files.splice(index)
-                return list.map((item: string): string[] => [
-                    item,
-                    `${publicUrl}/audio/${item}.opus`
-                ])
+        // /<stream alias>/hubs
+        if (path[2] === "hubs") {
+            const hubs: Hub[] = await getHubs({
+                dbActions,
+                streamAlias: path[1]
+            })
+            return {
+                body: new TextEncoder().encode(
+                    JSON.stringify(
+                        hubs.map((hub) => ({ id: hub.id, url: hub.url }))
+                    )
+                ),
+                status: 200,
+                headers
+            }
+        } else if (path[2] === "admin") {
+            return {
+                body: new TextEncoder().encode(
+                    JSON.stringify(
+                        await getStream({
+                            alias: path[1],
+                            dbActions,
+                            publicUrl
+                        })
+                    )
+                ),
+                status: 200,
+                headers
+            }
+        } else {
+            // return playlist
+            // /<stream id>/<segment?>
+            const idList: Segment[] = await dbActions.getSegments({
+                streamId: path[1],
+                segmentId: v4.validate(path[2]) ? path[2] : undefined
+            })
+
+            return {
+                body: new TextEncoder().encode(JSON.stringify(idList)),
+                status: 200,
+                headers
             }
         }
+    } catch (e) {
+        return {
+            body: new TextEncoder().encode(e.message),
+            status: 404
+        }
     }
 }
 
-// TODO: add doc
-function audioFile(req: ServerRequest, fileName: string): Promise<Response> {
-    return new Promise(
-        async (resolve: Resolve<Response>): Promise<void> => {
-            const filePath: string = `out/${fileName}`
-            // TODO: if file doesn't exist..
-            const [file, fileInfo] = await Promise.all([
-                Deno.open(filePath),
-                Deno.stat(filePath)
-            ])
-            const headers = new Headers()
-            headers.set("content-length", fileInfo.size.toString())
-            headers.set("content-type", "audio/ogg")
-            resolve({
-                status: 200,
-                body: file,
-                headers
-            })
-            await req.done
-            // always close the file when done reading
-            Deno.close(file.rid)
+/**
+ * POST request
+ *
+ * `/<alias>` -> upload audio
+ *
+ * `/stream` -> create new stream
+ */
+async function handlePost({
+    dbActions,
+    fileUrl,
+    publicUrl,
+    req,
+    rootDir
+}: HandlePostFnArgs): Promise<Response> {
+    const path: string[] = req.url.split("/")
+
+    try {
+        if (path[1] === "stream") {
+            // create stream id
+            return await createStream({ dbActions, rootDir, publicUrl })
         }
-    )
+
+        if (!v4.validate(path[1])) {
+            throw Error("Invalid path")
+        }
+
+        // /<stream alias>
+        // post adds file
+        // need to match uuid in KV
+        return await handleForm({
+            req,
+            dbActions,
+            rootDir,
+            fileUrl,
+            alias: path[1]
+        })
+    } catch (e) {
+        return {
+            body: new TextEncoder().encode(e.message),
+            status: 404
+        }
+    }
 }
 
-// TODO: add doc
-async function handleReq(req: ServerRequest, get: GetState): Promise<Response> {
-    req.done
+/**
+ * PUT reqest
+ *
+ * `/<alias>/admin` -> add hub to stream
+ */
+async function handlePut({
+    req,
+    dbActions,
+    publicUrl
+}: HandlePutFnArgs): Promise<Response> {
+    const path: string[] = req.url.split("/")
+    try {
+        if (!v4.validate(path[1]) || path[2] !== "admin") {
+            throw Error("Invalid path")
+        }
+
+        if (!req.contentLength) {
+            throw Error("No data")
+        }
+
+        const hubUrl: string = new TextDecoder().decode(
+            await Deno.readAll(req.body)
+        )
+
+        // /<stream alias>
+        // get hub url from body
+        const hub: Hub = await addHub({
+            dbActions,
+            hubUrl,
+            publicUrl,
+            streamAlias: path[1]
+        })
+
+        return {
+            body: new TextEncoder().encode(hub.id),
+            status: 200
+        }
+    } catch (e) {
+        return {
+            body: new TextEncoder().encode(e.message),
+            status: 404
+        }
+    }
+}
+
+/**
+ * DELETE reqest
+ *
+ * `/<alias>/admin` -> rm hub from stream
+ */
+async function handleDelete({
+    req,
+    dbActions
+}: HandleDeleteFnArgs): Promise<Response> {
+    const path: string[] = req.url.split("/")
+    try {
+        if (!v4.validate(path[1]) || path[2] !== "admin") {
+            throw Error("Invalid path")
+        }
+
+        if (!req.contentLength) {
+            throw Error("No data")
+        }
+
+        const id: string = new TextDecoder().decode(
+            await Deno.readAll(req.body)
+        )
+
+        // /<stream alias>
+        // get hub id from body
+        await removeHub({
+            dbActions,
+            id,
+            streamAlias: path[1]
+        })
+
+        return {
+            status: 200
+        }
+    } catch (e) {
+        return {
+            body: new TextEncoder().encode(e.message),
+            status: 404
+        }
+    }
+}
+
+// TODO: add docs
+/**
+ * path to get stream create UI
+ * path to create stream id
+ * path to upload audio segments
+ * path to get id playlist
+ * add/remove/get hubs
+ */
+// nginx static routes
+// if /stream
+// get 2 = uuid, return splutter for streaming ui
+// need to match uuid in KV
+// if /
+// get ui to create stream
+// if /audio/streamId/segmentId
+// let nginx return audio files from dir
+async function handleReq({
+    dbActions,
+    fileUrl,
+    publicUrl,
+    req,
+    rootDir
+}: HandleReqFn): Promise<Response> {
     switch (req.method) {
         case "GET":
-            try {
-                const path: string[] = req.url.split("/")
-                if (path[1] === "audio") {
-                    return await audioFile(req, path[2])
-                } else {
-                    const idList: string[][] = get(path[1])
-                    const headers = new Headers()
-                    headers.set("content-type", "application/json")
-                    return {
-                        body: new TextEncoder().encode(JSON.stringify(idList)),
-                        status: 200,
-                        headers
-                    }
-                }
-            } catch (e) {
-                return {
-                    body: new TextEncoder().encode(e.message),
-                    status: 404
-                }
-            }
+            return await handleGet({ req, dbActions, publicUrl })
         case "POST":
-            return await handleForm(req)
+            return await handlePost({
+                req,
+                dbActions,
+                rootDir,
+                publicUrl,
+                fileUrl
+            })
+        case "PUT":
+            return await handlePut({ dbActions, publicUrl, req })
+        case "DELETE":
+            return await handleDelete({ dbActions, req })
         case "OPTIONS":
             return { status: 200 }
         default:
@@ -163,6 +314,7 @@ async function handleReq(req: ServerRequest, get: GetState): Promise<Response> {
 }
 
 // TODO: add doc
+// TODO: move to nginx?
 // required for streaming requests
 function setCORS(res: Response): Response {
     if (!res.headers) {
@@ -178,14 +330,35 @@ function setCORS(res: Response): Response {
 }
 
 // TODO: add doc
-async function main(publicUrl: string): Promise<void> {
-    const { getState, stop } = fileState(publicUrl)
+/**
+ *
+ * @param publicUrl where app is accessed from
+ * @param port run on local port
+ * @param rootDir app data dir
+ * @param dbPath path to db file
+ * @param filesUrl public base url for audio files
+ */
+export async function main({
+    dbPath,
+    fileUrl,
+    port,
+    publicUrl,
+    rootDir
+}: MainFnArgs): Promise<void> {
+    const db: sqlite.DB = await sqlite.open(dbPath)
+    const dbActions: DBActions = getDBActions(initDb(db))
 
-    for await (const req of serve("0.0.0.0:8000")) {
-        req.respond(setCORS(await handleReq(req, getState)))
+    const server = serve(`0.0.0.0:${port}`)
+
+    for await (const req of server) {
+        req.respond(
+            setCORS(
+                await handleReq({ req, dbActions, rootDir, publicUrl, fileUrl })
+            )
+        )
+        sqlite.save(db)
     }
 
-    stop()
+    db.close()
+    server.close()
 }
-
-main("http://0.0.0.0:8000")
