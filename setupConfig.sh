@@ -35,3 +35,18 @@ sed -e "s@{{user}}@$USER@g" \
 
 sed -e "s@{{splutter_url}}@$SPLUTTER_URL@g" \
     templates/env.js.template > ui/public/env.js
+
+# Symlink the nginx conf file
+sudo ln -s "$CURR_PATH/config/sludge_nginx.conf" \
+    "/etc/nginx/sites-enabled/"
+
+# Restart nginx to enable conf file
+sudo service nginx restart
+
+# Create a system entry for the service
+sudo cp "$CURR_PATH/config/sludge_server.service" \
+    "/etc/systemd/system/sludge_server.service"
+
+# Run the service
+sudo systemctl start sludge_server
+sudo systemctl enable sludge_server
