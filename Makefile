@@ -6,9 +6,6 @@ ARGS1=--files="$(SLUDGE_FILES)"
 ARGS=$(ARGS0) $(ARGS1)
 
 init:
-	[[ -d "$(HOME)/.sludge" ]] || mkdir "$(HOME)/.sludge"
-	[[ -d typings ]] || mkdir typings
-	[[ -f typings/deno.d.ts ]] || deno types > typings/deno.d.ts
 	./setupConfig.sh
 run:
 	ifndef SLUDGE_FILES

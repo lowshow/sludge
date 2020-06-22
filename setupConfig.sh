@@ -3,6 +3,10 @@
 # Prevent running in case of failures
 set -euf -o pipefail
 
+[[ -d "$HOME/.sludge" ]] || mkdir "$HOME/.sludge"
+[[ -d typings ]] || mkdir typings
+[[ -f typings/deno.d.ts ]] || deno types > typings/deno.d.ts
+
 USER="$(whoami)"
 echo "You are $USER"
 
