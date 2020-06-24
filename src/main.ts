@@ -345,7 +345,7 @@ export async function main({
     publicUrl,
     rootDir
 }: MainFnArgs): Promise<void> {
-    const db: sqlite.DB = await sqlite.open(dbPath)
+    const db: sqlite.DB = new sqlite.DB(dbPath)
     const dbActions: DBActions = getDBActions(initDb(db))
 
     const server = serve(`0.0.0.0:${port}`)
@@ -356,7 +356,6 @@ export async function main({
                 await handleReq({ req, dbActions, rootDir, publicUrl, fileUrl })
             )
         )
-        sqlite.save(db)
     }
 
     db.close()

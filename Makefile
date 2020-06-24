@@ -8,13 +8,7 @@ ARGS=$(ARGS0) $(ARGS1)
 init:
 	./setupConfig.sh
 run:
-	ifndef SLUDGE_FILES
-	$(error SLUDGE_FILES is not set)
-	endif
-	ifndef SLUDGE_PUBLIC
-	$(error SLUDGE_PUBLIC is not set)
-	endif
-	ifndef SLUDGE_PORT
-	$(error SLUDGE_PORT is not set)
-	endif
+	test $(SLUDGE_FILES)
+	test $(SLUDGE_PUBLIC)
+	test $(SLUDGE_PORT)
 	$(HOME)/.deno/bin/deno run $(PERM) src/app.ts $(ARGS)
