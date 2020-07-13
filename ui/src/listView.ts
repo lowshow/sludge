@@ -183,7 +183,6 @@ export function streamsDD({
 }): HTMLDivElement {
     const view: HTMLDivElement = row(col12(el("div")))
     const viewMnt: MntFn<HTMLDivElement> = mnt(view)
-
     function inner(streams: StreamData[]): HTMLElement[] {
         if (!streams) return []
         const sel: HTMLSelectElement = mnt(
@@ -201,7 +200,7 @@ export function streamsDD({
             )
         )
         lstn(sel)
-            .on("click")
+            .on("change")
             .do((): void => {
                 updateState({ viewStreamIndex: parseInt(sel.value, 10) })
             })
@@ -249,6 +248,7 @@ export function listViewGen({ state }: { state: SFn }): HTMLDivElement {
             previous: oldState,
             selector: vStreamsSel
         }).do((index: number): void => {
+            console.log(index)
             emt(viewInner)
             viewMnt(
                 buildStreamList({ current: streamsSel(current)[index], state })

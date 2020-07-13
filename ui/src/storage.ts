@@ -45,6 +45,6 @@ export function storage({
     return (): void => {
         const state: State | undefined = getStateStore()
         if (!state) return
-        updateState(state)
+        updateState({ ...state, viewStreamIndex: state.streams.length - 1 })
     }
 }

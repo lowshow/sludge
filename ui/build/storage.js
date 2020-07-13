@@ -34,6 +34,6 @@ export function storage({ state: { getState, subscribe, updateState } }) {
         const state = getStateStore();
         if (!state)
             return;
-        updateState(state);
+        updateState(Object.assign(Object.assign({}, state), { viewStreamIndex: state.streams.length - 1 }));
     };
 }

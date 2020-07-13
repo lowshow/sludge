@@ -146,7 +146,7 @@ export function streamsDD({ state: { getState, updateState, subscribe } }) {
             ["selected", i === streams.length - 1 ? "selected" : ""]
         ])));
         lstn(sel)
-            .on("click")
+            .on("change")
             .do(() => {
             updateState({ viewStreamIndex: parseInt(sel.value, 10) });
         });
@@ -186,6 +186,7 @@ export function listViewGen({ state }) {
             previous: oldState,
             selector: vStreamsSel
         }).do((index) => {
+            console.log(index);
             emt(viewInner);
             viewMnt(buildStreamList({ current: streamsSel(current)[index], state }));
         });
