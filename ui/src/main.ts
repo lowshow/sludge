@@ -64,7 +64,7 @@ export function main({
     const viewWrap: HTMLDivElement = viewContainer()
 
     mnt(container)([
-        headerGen({ state }),
+        // headerGen({ state }),
         viewWrap,
         addBtnGen({
             state

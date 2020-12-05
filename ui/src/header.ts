@@ -17,10 +17,10 @@ function modalGen({
     onDismiss: F<void, void>
 }): HTMLDivElement {
     const continueBtn: HTMLButtonElement = el("button", {
-        attr: { textContent: "Continue", className: btnClass("btn") }
+        attr: { textContent: "Continue", className: btnClass("") }
     })
     const dismissBtn: HTMLButtonElement = el("button", {
-        attr: { textContent: "Dismiss", className: btnClass("btn") }
+        attr: { textContent: "Dismiss", className: btnClass("") }
     })
 
     lstn(continueBtn)
@@ -34,7 +34,7 @@ function modalGen({
             onDismiss()
         })
 
-    return mnt(el("div", { attr: { id: "modal1", className: "modal black" } }))(
+    return mnt(el("div", { attr: { id: "modal1", className: "modal dark300" } }))(
         [
             mnt(el("div", { attr: { className: "modal-content" } }))(
                 el("p", {
@@ -46,7 +46,7 @@ function modalGen({
             ),
             mnt(
                 el("div", {
-                    attr: { className: "modal-footer black btn-group" }
+                    attr: { className: "modal-footer dark300 btn-group" }
                 })
             )([continueBtn, dismissBtn])
         ]
@@ -110,7 +110,7 @@ export function headerGen({
         cls(el("div", { onMount }))("navbar-fixed")
     )([
         mnt(el("nav"))(
-            mnt(cls(el("div"))(["nav-wrapper", "spaced", "black"]))([
+            mnt(cls(el("div"))(["nav-wrapper", "spaced", "dark300"]))([
                 cls(el("figure"))("logo"),
                 mnt(atr(el("ul")).prop("id")("nav-mobile"))(mnt(el("li"))(btn))
             ])

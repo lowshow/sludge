@@ -13,7 +13,7 @@ function tabInner({
     child: HTMLElement
     id: string
 }): HTMLDivElement {
-    return mnt(el("div", { attr: { className: "tab_inner black", id } }))(child)
+    return mnt(el("div", { attr: { className: "tab_inner dark300", id } }))(child)
 }
 
 function hubList({
@@ -38,7 +38,7 @@ function hubList({
         atr(el("button")).map([
             ["type", "submit"],
             ["textContent", "Submit"],
-            ["className", btnClass("btn")]
+            ["className", btnClass("")]
         ])
     ])
 
@@ -116,13 +116,13 @@ function buildStreamList({
 }): HTMLDivElement {
     const tabsEl: HTMLUListElement = tabs([
         tab({
-            label: `Info`,
-            id: `#streamInfo`,
+            label: `Hubs`,
+            id: `#hubs`,
             active: true
         }),
         tab({
-            label: `Hubs`,
-            id: `#hubs`,
+            label: `Info`,
+            id: `#streamInfo`,
             active: false
         })
     ])
@@ -167,8 +167,8 @@ function buildStreamList({
         row([
             col12([
                 tabsEl,
-                tabInner({ child: col12(collapse), id: "streamInfo" }),
-                tabInner({ child: hubList({ state }), id: "hubs" })
+                tabInner({ child: hubList({ state }), id: "hubs" }),
+                tabInner({ child: col12(collapse), id: "streamInfo" })
             ])
         ])
     )
@@ -187,7 +187,7 @@ export function streamsDD({
         if (!streams) return []
         const sel: HTMLSelectElement = mnt(
             atr(el("select")).map([
-                ["className", "dropdown_select black white-text"]
+                ["className", "dropdown_select dark300 white-text"]
             ])
         )(
             streams.map(

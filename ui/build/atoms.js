@@ -3,7 +3,7 @@ export function addBtn() {
     return mnt(atr(el("button")).map([
         ["className", btnClass("scale-transition btn-floating btn-large")]
     ]))(atr(el("i")).map([
-        ["className", "material-icons black-text"],
+        ["className", "material-icons"],
         ["textContent", "add"]
     ]));
 }
@@ -14,7 +14,7 @@ export function col12(children) {
     return mnt(atr(el("div")).prop("className")("col s12"))(children);
 }
 export function btnClass(classes) {
-    return `${classes} waves-effect waves-teal light-green accent-4 black-text`;
+    return `${classes} Button_click`;
 }
 export function loader() {
     return mnt(atr(el("div")).prop("className")("progress blue"))(atr(el("div")).prop("className")("indeterminate blue darken-4"));
@@ -23,12 +23,13 @@ export function toast(message) {
     M.toast({ html: message, classes: "blue lighten-1" });
 }
 export function tabs(children) {
-    return mnt(atr(el("ul")).prop("className")("tabs black tabs-fixed-width"))(children);
+    return mnt(atr(el("ul")).prop("className")("tabs dark300 tabs-fixed-width"))(children);
 }
 export function tab({ id, label, active = false }) {
     return mnt(atr(el("li")).prop("className")(`tab ${active ? "active" : ""}`))(atr(el("a")).map([
         ["href", id],
-        ["textContent", label]
+        ["textContent", label],
+        ["className", "Button_click"]
     ]));
 }
 export function iterW(children) {
@@ -50,7 +51,7 @@ export function collW(children) {
 export function coll({ label, btnLabel, onButtonClick, text }) {
     const btn = atr(el("button")).map([
         ["textContent", btnLabel],
-        ["className", btnClass("btn")]
+        ["className", btnClass("")]
     ]);
     lstn(btn)
         .on("click")
@@ -60,7 +61,7 @@ export function coll({ label, btnLabel, onButtonClick, text }) {
         onButtonClick();
     });
     return mnt(el("li"))([
-        mnt(atr(el("div")).prop("className")("collapsible-header black spaced"))([atr(el("span")).prop("textContent")(label), btn]),
+        mnt(atr(el("div")).prop("className")("collapsible-header dark300 spaced"))([atr(el("span")).prop("textContent")(label), btn]),
         mnt(atr(el("div")).prop("className")("collapsible-body"))(atr(el("span")).prop("innerHTML")(text))
     ]);
 }

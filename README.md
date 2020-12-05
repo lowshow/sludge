@@ -66,7 +66,9 @@ Base URL (including any paths, **with** trailing slash) where audio file segment
 
 Full URL for the splutter app associated with this sludge instance (they must belong on the same domain)
 
-#### Dev
+### Dev
+
+#### Server
 
 -   Pass environment variables and run:
 
@@ -75,3 +77,11 @@ SLUDGE_PUBLIC="http://some.url/" SLUDGE_FILES="http://some.url/audio/" SLUDGE_PO
 ```
 
 NOTE: trailing slash should be included at the end of the URLs
+
+#### UI
+
+```shell
+cd ui
+npm i
+npm run dev
+```

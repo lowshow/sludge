@@ -1,6 +1,6 @@
 import { main } from "./main.ts"
 import * as path from "https://deno.land/std/path/mod.ts"
-import * as fs from "https://deno.land/std@0.57.0/fs/mod.ts"
+import * as fs from "https://deno.land/std/fs/mod.ts"
 import { parse, Args } from "https://deno.land/std/flags/mod.ts"
 ;(async () => {
     try {

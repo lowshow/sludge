@@ -7,8 +7,10 @@ ARGS=$(ARGS0) $(ARGS1)
 
 init:
 	./setupConfig.sh
+init-dev:
+	./setupConfig.sh dev
 run:
 	test $(SLUDGE_FILES)
 	test $(SLUDGE_PUBLIC)
 	test $(SLUDGE_PORT)
-	$(HOME)/.deno/bin/deno run $(PERM) src/app.ts $(ARGS)
+	/usr/bin/env deno run $(PERM) src/app.ts $(ARGS)

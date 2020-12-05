@@ -7,7 +7,7 @@ export function createViewGen({ state: { getState, updateState, subscribe } }) {
     const back = el("button", {
         attr: {
             textContent: "Back to list",
-            className: btnClass("btn-large")
+            className: btnClass("")
         }
     });
     lstn(back)
@@ -17,7 +17,7 @@ export function createViewGen({ state: { getState, updateState, subscribe } }) {
     });
     const create = atr(el("button")).map([
         ["textContent", "Create new stream"],
-        ["className", btnClass("btn-large")]
+        ["className", btnClass("")]
     ]);
     lstn(create)
         .on("click")
@@ -42,7 +42,7 @@ export function createViewGen({ state: { getState, updateState, subscribe } }) {
         atr(el("button")).map([
             ["type", "submit"],
             ["textContent", "Submit"],
-            ["className", btnClass("btn")]
+            ["className", btnClass("")]
         ])
     ]);
     lstn(input)

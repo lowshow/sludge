@@ -7,10 +7,10 @@ function ccSel(state) {
 }
 function modalGen({ onContinue, onDismiss }) {
     const continueBtn = el("button", {
-        attr: { textContent: "Continue", className: btnClass("btn") }
+        attr: { textContent: "Continue", className: btnClass("") }
     });
     const dismissBtn = el("button", {
-        attr: { textContent: "Dismiss", className: btnClass("btn") }
+        attr: { textContent: "Dismiss", className: btnClass("") }
     });
     lstn(continueBtn)
         .on("click")
@@ -22,14 +22,14 @@ function modalGen({ onContinue, onDismiss }) {
         .do(() => {
         onDismiss();
     });
-    return mnt(el("div", { attr: { id: "modal1", className: "modal black" } }))([
+    return mnt(el("div", { attr: { id: "modal1", className: "modal dark300" } }))([
         mnt(el("div", { attr: { className: "modal-content" } }))(el("p", {
             attr: {
                 textContent: "This button opens a window that allows you to record live audio from your device and send it directly to your streams."
             }
         })),
         mnt(el("div", {
-            attr: { className: "modal-footer black btn-group" }
+            attr: { className: "modal-footer dark300 btn-group" }
         }))([continueBtn, dismissBtn])
     ]);
 }
@@ -74,7 +74,7 @@ export function headerGen({ state: { subscribe, getState, updateState } }) {
         M.Modal.init(modal);
     };
     const nav = mnt(cls(el("div", { onMount }))("navbar-fixed"))([
-        mnt(el("nav"))(mnt(cls(el("div"))(["nav-wrapper", "spaced", "black"]))([
+        mnt(el("nav"))(mnt(cls(el("div"))(["nav-wrapper", "spaced", "dark300"]))([
             cls(el("figure"))("logo"),
             mnt(atr(el("ul")).prop("id")("nav-mobile"))(mnt(el("li"))(btn))
         ])),

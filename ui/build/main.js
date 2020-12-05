@@ -5,7 +5,6 @@ import { View, views } from "./view.js";
 import { hubGen } from "./hub.js";
 import { storage } from "./storage.js";
 import { addBtnGen } from "./addBtn.js";
-import { headerGen } from "./header.js";
 export var Mode;
 (function (Mode) {
     Mode["dummy"] = "dummy";
@@ -35,7 +34,7 @@ export function main({ container, mode, streamUI }) {
     });
     const viewWrap = viewContainer();
     mnt(container)([
-        headerGen({ state }),
+        // headerGen({ state }),
         viewWrap,
         addBtnGen({
             state
