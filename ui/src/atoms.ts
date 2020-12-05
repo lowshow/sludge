@@ -8,7 +8,7 @@ export function addBtn(): HTMLButtonElement {
         ])
     )(
         atr(el("i")).map([
-            ["className", "material-icons black-text"],
+            ["className", "material-icons"],
             ["textContent", "add"]
         ])
     )
@@ -23,7 +23,7 @@ export function col12(children: HTMLElement | HTMLElement[]): HTMLDivElement {
 }
 
 export function btnClass(classes: string): string {
-    return `${classes} waves-effect waves-teal light-green accent-4 black-text`
+    return `${classes} Button_click`
 }
 
 export function loader(): HTMLDivElement {
@@ -37,7 +37,7 @@ export function toast(message: string): void {
 }
 
 export function tabs(children: HTMLElement | HTMLElement[]): HTMLUListElement {
-    return mnt(atr(el("ul")).prop("className")("tabs black tabs-fixed-width"))(
+    return mnt(atr(el("ul")).prop("className")("tabs dark300 tabs-fixed-width"))(
         children
     )
 }
@@ -56,7 +56,8 @@ export function tab({
     )(
         atr(el("a")).map([
             ["href", id],
-            ["textContent", label]
+            ["textContent", label],
+            ["className", "Button_click"]
         ])
     )
 }
@@ -105,7 +106,7 @@ export function coll({
 }): HTMLLIElement {
     const btn: HTMLButtonElement = atr(el("button")).map([
         ["textContent", btnLabel],
-        ["className", btnClass("btn")]
+        ["className", btnClass("")]
     ])
     lstn(btn)
         .on("click")
@@ -116,7 +117,7 @@ export function coll({
         })
     return mnt(el("li"))([
         mnt(
-            atr(el("div")).prop("className")("collapsible-header black spaced")
+            atr(el("div")).prop("className")("collapsible-header dark300 spaced")
         )([atr(el("span")).prop("textContent")(label), btn]),
         mnt(atr(el("div")).prop("className")("collapsible-body"))(
             atr(el("span")).prop("innerHTML")(text)

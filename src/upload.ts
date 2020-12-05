@@ -2,7 +2,7 @@ import {
     MultipartReader,
     MultipartFormData,
     FormFile
-} from "https://deno.land/std@0.51.0/mime/multipart.ts"
+} from "https://deno.land/std/mime/multipart.ts"
 import { v4 } from "https://deno.land/std/uuid/mod.ts"
 import { ServerRequest, Response } from "https://deno.land/std/http/server.ts"
 import { Stream } from "./common/interfaces.ts"
@@ -34,9 +34,9 @@ async function loadFile({
     streamId
 }: LoadFileFnArgs): Promise<void> {
     const data: MultipartFormData = await r.readForm()
-    const formFile: FormFile | undefined = data.file("audio")
+    const formFile: FormFile | FormFile[] | undefined = data.file("audio")
     // we have the file data, connection can close now
-    if (!formFile || !formFile.content) return
+    if (!formFile || Array.isArray(formFile) || !formFile.content) return
     const id = v4.generate()
     const filePath: string = path.join(rootDir, "audio", streamId, `${id}.opus`)
     const file = await Deno.open(filePath, {

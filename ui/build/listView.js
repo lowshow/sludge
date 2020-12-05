@@ -5,7 +5,7 @@ import { mnt, el, atr, emt, lstn, cls } from "./dom.js";
 import { onDiff } from "./state.js";
 import { vHubsSel } from "./hub.js";
 function tabInner({ child, id }) {
-    return mnt(el("div", { attr: { className: "tab_inner black", id } }))(child);
+    return mnt(el("div", { attr: { className: "tab_inner dark300", id } }))(child);
 }
 function hubList({ state: { updateState, getState, subscribe } }) {
     const input = atr(el("input")).map([
@@ -24,7 +24,7 @@ function hubList({ state: { updateState, getState, subscribe } }) {
         atr(el("button")).map([
             ["type", "submit"],
             ["textContent", "Submit"],
-            ["className", btnClass("btn")]
+            ["className", btnClass("")]
         ])
     ]);
     lstn(input)
@@ -80,13 +80,13 @@ function hubList({ state: { updateState, getState, subscribe } }) {
 function buildStreamList({ current, state }) {
     const tabsEl = tabs([
         tab({
-            label: `Info`,
-            id: `#streamInfo`,
+            label: `Hubs`,
+            id: `#hubs`,
             active: true
         }),
         tab({
-            label: `Hubs`,
-            id: `#hubs`,
+            label: `Info`,
+            id: `#streamInfo`,
             active: false
         })
     ]);
@@ -126,8 +126,8 @@ function buildStreamList({ current, state }) {
     }))(row([
         col12([
             tabsEl,
-            tabInner({ child: col12(collapse), id: "streamInfo" }),
-            tabInner({ child: hubList({ state }), id: "hubs" })
+            tabInner({ child: hubList({ state }), id: "hubs" }),
+            tabInner({ child: col12(collapse), id: "streamInfo" })
         ])
     ]));
     return wrap;
@@ -139,7 +139,7 @@ export function streamsDD({ state: { getState, updateState, subscribe } }) {
         if (!streams)
             return [];
         const sel = mnt(atr(el("select")).map([
-            ["className", "dropdown_select black white-text"]
+            ["className", "dropdown_select dark300 white-text"]
         ]))(streams.map((_, i) => atr(el("option")).map([
             ["textContent", `Stream ${i + 1}`],
             ["value", i],

@@ -13,7 +13,7 @@ export function createViewGen({
     const back: HTMLButtonElement = el("button", {
         attr: {
             textContent: "Back to list",
-            className: btnClass("btn-large")
+            className: btnClass("")
         }
     })
 
@@ -25,7 +25,7 @@ export function createViewGen({
 
     const create: HTMLButtonElement = atr(el("button")).map([
         ["textContent", "Create new stream"],
-        ["className", btnClass("btn-large")]
+        ["className", btnClass("")]
     ])
 
     lstn(create)
@@ -54,7 +54,7 @@ export function createViewGen({
         atr(el("button")).map([
             ["type", "submit"],
             ["textContent", "Submit"],
-            ["className", btnClass("btn")]
+            ["className", btnClass("")]
         ])
     ])
 
