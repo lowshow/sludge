@@ -6,20 +6,20 @@ interface CreateStreamFnArgs {
     id: string
     alias: string
 }
-type CreateStreamFn = (args: CreateStreamFnArgs) => Promise<Stream>
+type CreateStreamFn = (args: CreateStreamFnArgs) => Promise<Stream | undefined>
 
 // TODO: add doc
 interface GetStreamFnArgs {
     alias: string
 }
-type GetStreamFn = (args: GetStreamFnArgs) => Promise<Stream>
+type GetStreamFn = (args: GetStreamFnArgs) => Promise<Stream | undefined>
 
 // TODO: add doc
 interface GetSegmentsFnArgs {
     streamId: string
     segmentId?: string
 }
-type GetSegmentsFn = (args: GetSegmentsFnArgs) => Promise<Segment[]>
+type GetSegmentsFn = (args: GetSegmentsFnArgs) => Promise<Segment[] | undefined>
 
 // TODO: add doc
 interface AddSegmentFnArgs {
@@ -27,13 +27,13 @@ interface AddSegmentFnArgs {
     url: string
     id: string
 }
-type AddSegmentFn = (args: AddSegmentFnArgs) => Promise<Segment>
+type AddSegmentFn = (args: AddSegmentFnArgs) => Promise<Segment | undefined>
 
 // TODO: add doc
 interface GetHubsFnArgs {
     streamId: string
 }
-type GetHubsFn = (args: GetHubsFnArgs) => Promise<Hub[]>
+type GetHubsFn = (args: GetHubsFnArgs) => Promise<Hub[] | undefined>
 
 // TODO: add doc
 interface AddHubFnArgs {
@@ -41,7 +41,7 @@ interface AddHubFnArgs {
     streamId: string
     url: string
 }
-type AddHubFn = (args: AddHubFnArgs) => Promise<Hub>
+type AddHubFn = (args: AddHubFnArgs) => Promise<Hub | undefined>
 
 // TODO: add doc
 interface RemoveHubFnArgs {
@@ -73,8 +73,8 @@ interface CreateTableQFnArgs {
 
 // TODO: add doc
 function createStream(db: sqlite.DB): CreateStreamFn {
-    return ({ alias, id }): Promise<Stream> => {
-        return new Promise((resolve: Resolve<Stream>): void => {
+    return ({ alias, id }): Promise<Stream | undefined> => {
+        return new Promise((resolve: Resolve<Stream | undefined>): void => {
             const stream: Stream = {
                 id,
                 alias,
@@ -94,8 +94,8 @@ function createStream(db: sqlite.DB): CreateStreamFn {
 
 // TODO: add doc
 function getStream(db: sqlite.DB): GetStreamFn {
-    return ({ alias }): Promise<Stream> => {
-        return new Promise((resolve: Resolve<Stream>): void => {
+    return ({ alias }): Promise<Stream | undefined> => {
+        return new Promise((resolve: Resolve<Stream | undefined>): void => {
             const rows = db.query(
                 "SELECT id, alias, created FROM streams WHERE alias = $alias;",
                 { $alias: alias }
@@ -119,8 +119,8 @@ function getStream(db: sqlite.DB): GetStreamFn {
 
 // TODO: add doc
 function addHub(db: sqlite.DB): AddHubFn {
-    return ({ id, url, streamId }): Promise<Hub> => {
-        return new Promise((resolve: Resolve<Hub>): void => {
+    return ({ id, url, streamId }): Promise<Hub | undefined> => {
+        return new Promise((resolve: Resolve<Hub | undefined>): void => {
             const hub: Hub = {
                 id,
                 url,
@@ -157,8 +157,8 @@ function removeHub(db: sqlite.DB): RemoveHubFn {
 
 // TODO: add doc
 function getHubs(db: sqlite.DB): GetHubsFn {
-    return ({ streamId }): Promise<Hub[]> => {
-        return new Promise((resolve: Resolve<Hub[]>): void => {
+    return ({ streamId }): Promise<Hub[] | undefined> => {
+        return new Promise((resolve: Resolve<Hub[] | undefined>): void => {
             const hubs: Hub[] = []
 
             const rows = db.query(
@@ -178,8 +178,8 @@ function getHubs(db: sqlite.DB): GetHubsFn {
 
 // TODO: add doc
 function addSegment(db: sqlite.DB): AddSegmentFn {
-    return ({ streamId, url, id }): Promise<Segment> => {
-        return new Promise((resolve: Resolve<Segment>): void => {
+    return ({ streamId, url, id }): Promise<Segment | undefined> => {
+        return new Promise((resolve: Resolve<Segment | undefined>): void => {
             const segment: Segment = {
                 id,
                 streamId,
@@ -200,8 +200,8 @@ function addSegment(db: sqlite.DB): AddSegmentFn {
 
 // TODO: add doc
 function getSegments(db: sqlite.DB): GetSegmentsFn {
-    return ({ streamId, segmentId }): Promise<Segment[]> => {
-        return new Promise((resolve: Resolve<Segment[]>): void => {
+    return ({ streamId, segmentId }): Promise<Segment[] | undefined> => {
+        return new Promise((resolve: Resolve<Segment[] | undefined>): void => {
             // if segment id, return all after segment ID
             const segments: Segment[] = []
 

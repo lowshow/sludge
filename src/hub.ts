@@ -24,11 +24,17 @@ export async function addHub({
     streamAlias,
     hubUrl,
     publicUrl
-}: AddHubFnArgs): Promise<Hub> {
+}: AddHubFnArgs): Promise<Hub | undefined> {
     // get stream id
     const stream = await dbActions.getStream({ alias: streamAlias })
+    if (!stream) {
+        throw Error(`Stream not found`)
+    }
     // ensure unique
-    const hubs: Hub[] = await dbActions.getHubs({ streamId: stream.id })
+    const hubs = await dbActions.getHubs({ streamId: stream.id })
+    if (!hubs) {
+        throw Error(`Hubs not found`)
+    }
     if (hubs.find((hub: Hub): boolean => hub.url === hubUrl) !== undefined) {
         throw Error(`Hub ${hubUrl} already used by stream.`)
     }
@@ -57,8 +63,14 @@ export async function removeHub({
 }: DeleteHubFnArgs) {
     // get stream id
     const stream = await dbActions.getStream({ alias: streamAlias })
+    if (!stream) {
+        throw Error(`Stream not found`)
+    }
     // ensure exists
-    const hubs: Hub[] = await dbActions.getHubs({ streamId: stream.id })
+    const hubs = await dbActions.getHubs({ streamId: stream.id })
+    if (!hubs) {
+        throw Error(`Hubs not found`)
+    }
     const hub: Hub | undefined = hubs.find((hub: Hub): boolean => hub.id === id)
     if (hub === undefined) {
         throw Error(`Hub ${id} does not exist.`)
@@ -80,9 +92,12 @@ export async function removeHub({
 export async function getHubs({
     dbActions,
     streamAlias
-}: HubFnArgs): Promise<Hub[]> {
+}: HubFnArgs): Promise<Hub[] | undefined> {
     // get stream id
     const stream = await dbActions.getStream({ alias: streamAlias })
+    if (!stream) {
+        throw Error(`Stream not found`)
+    }
     // return hub list
     return await dbActions.getHubs({ streamId: stream.id })
 }

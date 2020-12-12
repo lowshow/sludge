@@ -13,4 +13,4 @@ run:
 	test $(SLUDGE_FILES)
 	test $(SLUDGE_PUBLIC)
 	test $(SLUDGE_PORT)
-	/usr/bin/env deno run $(PERM) src/app.ts $(ARGS)
+	$(HOME)/.deno/bin/deno run $(PERM) src/app.ts $(ARGS)

@@ -25,11 +25,14 @@ export async function getStream({
     dbActions: DBActions
     publicUrl: string
 }): Promise<StreamData> {
-    const { id } = await dbActions.getStream({ alias })
+    const stream = await dbActions.getStream({ alias })
+    if (!stream) {
+        throw Error(`Stream not found`)
+    }
     // return public path for upload/ UI/ public stream
     const streamData: StreamData = {
         admin: new URL(`${alias}/admin`, publicUrl).toString(),
-        download: new URL(id, publicUrl).toString(),
+        download: new URL(stream.id, publicUrl).toString(),
         hub: new URL(`${alias}/hubs`, publicUrl).toString()
     }
 
