@@ -70,7 +70,10 @@ export async function handleForm({
     }
 
     try {
-        const stream: Stream = await dbActions.getStream({ alias })
+        const stream = await dbActions.getStream({ alias })
+        if (!stream) {
+            throw Error(`Stream not found`)
+        }
         // boundaries are used to communicate request data structure
         // https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
         const boundary: string = type.substr(type.indexOf("=") + 1)

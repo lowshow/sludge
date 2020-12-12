@@ -85,12 +85,12 @@ async function handleGet({
 
         // /<stream alias>/hubs
         if (path[2] === "hubs") {
-            const hubs: Hub[] = await getHubs({
+            const hubs: Hub[] | undefined = await getHubs({
                 dbActions,
                 streamAlias: path[1]
             })
             return {
-                body: new TextEncoder().encode(
+                body: new TextEncoder().encode( !hubs ? "" :
                     JSON.stringify(
                         hubs.map((hub) => ({ id: hub.id, url: hub.url }))
                     )
@@ -115,13 +115,13 @@ async function handleGet({
         } else {
             // return playlist
             // /<stream id>/<segment?>
-            const idList: Segment[] = await dbActions.getSegments({
+            const idList = await dbActions.getSegments({
                 streamId: path[1],
                 segmentId: v4.validate(path[2]) ? path[2] : undefined
             })
 
             return {
-                body: new TextEncoder().encode(JSON.stringify(idList)),
+                body: new TextEncoder().encode(!idList ? "" : JSON.stringify(idList)),
                 status: 200,
                 headers
             }
@@ -204,7 +204,7 @@ async function handlePut({
 
         // /<stream alias>
         // get hub url from body
-        const hub: Hub = await addHub({
+        const hub = await addHub({
             dbActions,
             hubUrl,
             publicUrl,
@@ -212,7 +212,7 @@ async function handlePut({
         })
 
         return {
-            body: new TextEncoder().encode(hub.id),
+            body: new TextEncoder().encode(!hub ? "" : hub.id),
             status: 200
         }
     } catch (e) {
@@ -347,17 +347,23 @@ export async function main({
 }: MainFnArgs): Promise<void> {
     const db: sqlite.DB = new sqlite.DB(dbPath)
     const dbActions: DBActions = getDBActions(initDb(db))
-
     const server = serve(`0.0.0.0:${port}`)
 
-    for await (const req of server) {
-        req.respond(
-            setCORS(
-                await handleReq({ req, dbActions, rootDir, publicUrl, fileUrl })
+    try {
+        for await (const req of server) {
+            req.respond(
+                setCORS(
+                    await handleReq({ req, dbActions, rootDir, publicUrl, fileUrl })
+                )
             )
-        )
-    }
+        }
+    
+        db.close()
+        server.close()
+    } catch (e) {
+        db.close()
+        server.close()
 
-    db.close()
-    server.close()
+        throw e
+    }
 }
